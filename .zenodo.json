@@ -1,0 +1,34 @@
+{
+  "title": "TEMPO: Tracking, Engagement, Messaging & Participant Outreach",
+  "upload_type": "software",
+  "description": "<p>A self-hosted server for research studies that send scheduled surveys and reminders. TEMPO sits between a study's survey database of record and its messaging providers, turning a declarative timeline of study messages into precisely timed, auditable outreach. Any protocol whose contacts are driven by participant dates &mdash; longitudinal cohorts, momentary-assessment sampling, recurring survey cycles, retention and compensation sequences, trial follow-up schedules &mdash; can be expressed as a timeline spec and run without manual sending.</p><p>Capabilities include momentary-assessment (EMA) prompt delivery on fixed grids with exact-second firing and protocol-compliant skip handling; recurring survey cycles with conditional follow-up cadences that stop on response; visit, at-home and compensation reminders; just-in-time personal survey-link resolution; a password-gated coordinator dashboard for completion tracking and outgoing-message review; and a daily send-reconciliation audit. Delivery is defended by opt-out enforcement, quiet hours, append-only idempotency ledgers, provider-history arbitration against double-sends, send claims, a runtime kill switch, and bounded catch-up windows.</p><p>Extracted from servers running NIH-funded longitudinal research. The repository contains source files only: no participant data or credentials appear in the working tree or its history, and the message timeline ships as a synthetic example rather than a real protocol.</p>",
+  "creators": [
+    {
+      "name": "Zweben, Danny",
+      "affiliation": "Your Institution"
+    }
+  ],
+  "keywords": [
+    "ecological momentary assessment",
+    "experience sampling",
+    "REDCap",
+    "research software",
+    "participant management",
+    "longitudinal studies",
+    "clinical trials",
+    "SMS",
+    "survey automation",
+    "study reminders",
+    "retention",
+    "clinical research informatics"
+  ],
+  "license": "mit",
+  "access_right": "open",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/dzweben/tempo",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

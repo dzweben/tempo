@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1001|2|2026-01-23T22:00:00.000Z",
+    "sendKey": "1001|2|2026-01-23T22:00:00.000Z|sms|(555) 010-0001",
+    "timestamp": "2026-01-23T22:00:04.120Z",
+    "pid": "1001",
+    "alertId": 2,
+    "instrument": "Monthly Survey Follow-up 1.1",
+    "kind": "sts1_followup",
+    "channel": "sms",
+    "recipient": "(555) 010-0001",
+    "status": "sent"
+  }
+]

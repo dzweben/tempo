@@ -1,0 +1,18 @@
+{
+  "crons": [
+    {
+      "path": "/api/ema-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/refresh",
+      "schedule": "3,33 * * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/refresh/route.ts": {
+      "memory": 3009,
+      "maxDuration": 800
+    }
+  }
+}

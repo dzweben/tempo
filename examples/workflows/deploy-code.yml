@@ -1,0 +1,98 @@
+name: Deploy TEMPO (code/UI changes)
+
+# Auto-deploy front-end / code changes the moment they land on main.
+# WITHOUT re-fetching REDCap or Google Sheets — it builds from the data
+# files already committed in the repo. This closes the gap where a UI
+# change was committed but stayed invisible on the live site until the
+# next 6-hour data refresh happened to run.
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only code/UI/config — NOT app/private/data/** (those are pushed
+      # by the refresh-data workflow, which deploys them itself; listing
+      # them here would double-deploy and could race).
+      - "app/src/**"
+      - "app/vercel.json"
+      - "app/public/**"
+      - "app/package.json"
+      - "app/package-lock.json"
+      - "app/next.config.*"
+      - "app/tsconfig.json"
+      - "app/middleware.ts"
+      - "app/proxy.ts"
+      - ".github/workflows/deploy-code.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Share the refresh workflow's concurrency group so a code deploy and a
+# data refresh never hit Vercel / the production alias at the same time.
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate committed data files
+        run: |
+          set -e
+          # The build embeds these — never deploy if they don't parse or
+          # the roster is empty (belt-and-suspenders, same gate as the
+          # data refresh).
+          for f in participants due-reminders last-fetch; do
+            node -e "JSON.parse(require('fs').readFileSync('private/data/$f.json','utf8'))" \
+              || { echo "::error::private/data/$f.json is not valid JSON — aborting deploy"; exit 1; }
+          done
+          node -e "const d=JSON.parse(require('fs').readFileSync('private/data/participants.json','utf8')); if(!Array.isArray(d.participants)||d.participants.length<100){console.error('::error::participants.json has only',(d.participants||[]).length,'records — aborting deploy');process.exit(1)} console.log('Validated',d.participants.length,'participants')"
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -e
+          npm install -g vercel
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          echo "BUILD-OUTPUT crons: $(python3 -c "import json;print(json.load(open('.vercel/output/config.json')).get('crons'))" 2>/dev/null)"
+          # Vercel free tier caps uploads at 5000/day. When the quota is
+          # exhausted, failing this run is pure noise: the same code
+          # deploys automatically on the next even-hour refresh cycle
+          # once the quota resets. Defer loudly instead of failing.
+          # Any OTHER deploy error still fails the run.
+          set +e
+          # Server-side build (no --prebuilt): the canonical path for
+          # vercel.json cron registration (Stage A minute-clock).
+          OUT=$(vercel deploy --prod --token=$VERCEL_TOKEN 2>&1)
+          RC=$?
+          set -e
+          if [ $RC -ne 0 ]; then
+            if echo "$OUT" | grep -q "api-upload-free"; then
+              echo "::warning::Vercel daily upload quota exhausted — deploy DEFERRED. Code will ride the next even-hour refresh deploy after the quota resets."
+              exit 0
+            fi
+            echo "$OUT"; exit $RC
+          fi
+          # stdout+stderr are merged above (needed to see the quota error), so
+          # pick the deployment URL explicitly rather than trusting "last line".
+          DEPLOY_URL=$(echo "$OUT" | grep -oE 'https://[a-z0-9-]+\.vercel\.app' | tail -1)
+          echo "Deployed to: $DEPLOY_URL"
+          if [ -n "$DEPLOY_URL" ]; then
+            vercel alias set "$DEPLOY_URL" YOUR-DEPLOYMENT.vercel.app --token=$VERCEL_TOKEN
+          fi

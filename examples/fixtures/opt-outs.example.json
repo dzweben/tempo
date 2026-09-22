@@ -1,0 +1,8 @@
+{
+  "_readme": "Participants who asked to stop. Keys are record IDs; entries starting with _ are ignored. Enforced at queue generation AND send time.",
+  "1002": {
+    "reason": "Participant texted STOP",
+    "date": "2026-01-10",
+    "channels": "all"
+  }
+}

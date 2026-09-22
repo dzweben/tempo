@@ -1,0 +1,164 @@
+name: EMA Sweeper Setup (Vercel env)
+
+# One-shot provisioning for the off-GitHub EMA sweeper. Copies the
+# credentials the sweeper needs (QUO key, from-number, sweep secret)
+# from GitHub secrets into the Vercel project's production env via the
+# Vercel API, and reports the account plan (decides whether Vercel Cron
+# can be a trigger, or whether we rely on the launchd + workflow pings).
+# Env changes take effect on the next deploy — the 30-min refresh
+# pipeline deploys continuously, so within one cycle.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report Vercel plan and upsert sweeper env vars
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          QUO_API_KEY: ${{ secrets.QUO_API_KEY }}
+          QUO_FROM_NUMBER: ${{ secrets.QUO_FROM_NUMBER }}
+          SWEEP_SECRET: ${{ secrets.SWEEP_SECRET }}
+          GH_DATA_TOKEN: ${{ secrets.GH_DATA_TOKEN }}
+          REDCAP_API_URL: ${{ secrets.REDCAP_API_URL }}
+          REDCAP_API_TOKEN: ${{ secrets.REDCAP_API_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 << 'PY'
+          import json, os, urllib.request, urllib.error
+
+          token = os.environ["VERCEL_TOKEN"]
+          org = os.environ["VERCEL_ORG_ID"]
+          project = os.environ["VERCEL_PROJECT_ID"]
+          team_q = f"teamId={org}&" if org.startswith("team_") else ""
+
+          def api(path, payload=None, method="GET"):
+              req = urllib.request.Request(
+                  "https://api.vercel.com" + path,
+                  data=json.dumps(payload).encode() if payload else None,
+                  headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+                  method=method)
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      return r.status, json.loads(r.read().decode() or "{}")
+              except urllib.error.HTTPError as e:
+                  return e.code, json.loads(e.read().decode() or "{}")
+
+          # Plan report — tells us whether Vercel Cron is a viable trigger
+          # (Hobby crons are daily-only; Pro supports minute schedules).
+          if org.startswith("team_"):
+              code, t = api(f"/v2/teams/{org}")
+              plan = (t.get("billing") or {}).get("plan") or t.get("plan", "?")
+              print(f"Vercel scope: team {t.get('name','?')} | plan: {plan}")
+          else:
+              code, u = api("/v2/user")
+              user = u.get("user", {})
+              plan = (user.get("billing") or {}).get("plan", "?")
+              print(f"Vercel scope: personal {user.get('username','?')} | plan: {plan}")
+          print(f"PLAN={plan}")
+
+          # Upsert the env vars into production. CRON_SECRET mirrors
+          # SWEEP_SECRET: Vercel Cron invokes the sweeper with
+          # `Authorization: Bearer ${CRON_SECRET}` (Pro minute-cron is the
+          # sweeper's own clock as of 2026-09-15), and the route accepts
+          # that bearer when it equals SWEEP_SECRET.
+          pairs = [("QUO_API_KEY", os.environ.get("QUO_API_KEY", "")),
+                   ("QUO_FROM_NUMBER", os.environ.get("QUO_FROM_NUMBER", "")),
+                   ("SWEEP_SECRET", os.environ.get("SWEEP_SECRET", "")),
+                   ("CRON_SECRET", os.environ.get("SWEEP_SECRET", "")),
+                   ("GITHUB_DATA_TOKEN", os.environ.get("GH_DATA_TOKEN", "")),
+                   # Full-migration provisioning (2026-09-19): data pipeline,
+                   # Sheets, and email credentials for the Vercel-side
+                   # refresh/send/audit routes. GMAIL_APP_PASSWORD is dead
+                   # until the user rotates it — upserted anyway so rotation
+                   # is a re-run of this workflow, nothing more.
+                   ("REDCAP_API_URL", os.environ.get("REDCAP_API_URL", "")),
+                   ("REDCAP_API_TOKEN", os.environ.get("REDCAP_API_TOKEN", "")),
+                   ("GOOGLE_SERVICE_ACCOUNT_JSON", os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")),
+                   ("GOOGLE_SHEET_ID", os.environ.get("GOOGLE_SHEET_ID", "")),
+                   ("GMAIL_USER", os.environ.get("GMAIL_USER", "")),
+                   ("GMAIL_APP_PASSWORD", os.environ.get("GMAIL_APP_PASSWORD", ""))]
+          for key, val in pairs:
+              if not val:
+                  print(f"{key}: MISSING from GitHub secrets — skipped"); continue
+              code, body = api(f"/v10/projects/{project}/env?{team_q}upsert=true",
+                               {"key": key, "value": val, "type": "encrypted", "target": ["production"]},
+                               "POST")
+              print(f"{key}: HTTP {code}" + ("" if code in (200, 201) else f" {json.dumps(body)[:200]}"))
+          PY
+          # Gmail SMTP AUTH check: transporter.verify() performs the login
+          # handshake and sends NOTHING — proves the app password works
+          # without emailing anyone.
+          echo "=== gmail smtp auth check ==="
+          # Masked hint of the sending account, so app passwords get
+          # minted in the RIGHT Google account (full value stays secret).
+          echo "sending account hint: ${GMAIL_USER:0:3}***${GMAIL_USER: -14}"
+          npm install nodemailer --no-save >/dev/null 2>&1
+          node -e '
+            const nm = require("nodemailer");
+            const t = nm.createTransport({ host: "smtp.gmail.com", port: 465, secure: true,
+              auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD } });
+            t.verify().then(() => { console.log("GMAIL AUTH: OK — email channel is live"); })
+              .catch(e => { console.log("GMAIL AUTH: FAILED —", String(e.message).slice(0, 160)); });
+          '
+          # Live proof: capture ~70s of runtime logs — a firing minute-cron
+          # shows as a GET /api/ema-sweep each minute.
+          npm install -g vercel >/dev/null 2>&1
+          echo "=== runtime log capture (70s) ==="
+          timeout 70 vercel logs https://YOUR-DEPLOYMENT.vercel.app --token=$VERCEL_TOKEN 2>&1 | grep -iE "ema-sweep|ema-sender|cron|refresh-shadow|error" | head -40 || true
+          echo "=== function config ground truth ==="
+          vercel inspect https://YOUR-DEPLOYMENT.vercel.app --token=$VERCEL_TOKEN 2>&1 | head -50 || true
+          python3 << 'PY'
+          import json, os, urllib.request, urllib.error
+          token = os.environ["VERCEL_TOKEN"]; org = os.environ["VERCEL_ORG_ID"]; project = os.environ["VERCEL_PROJECT_ID"]
+          team_q = f"teamId={org}&" if org.startswith("team_") else ""
+          def api(path, payload=None, method="GET"):
+              req = urllib.request.Request("https://api.vercel.com" + path,
+                  data=json.dumps(payload).encode() if payload else None,
+                  headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"}, method=method)
+              try:
+                  with urllib.request.urlopen(req) as r: return r.status, json.loads(r.read().decode() or "{}")
+              except urllib.error.HTTPError as e: return e.code, json.loads(e.read().decode() or "{}")
+          # CRON GROUND TRUTH — three independent views:
+          # 1. Project-level cron state (enabled/disabled + definitions).
+          code, body = api(f"/v9/projects/{project}?{team_q}")
+          crons = body.get("crons") if code == 200 else None
+          print(f"PROJECT crons (v9, HTTP {code}): {json.dumps(crons)[:500]}")
+          # 2. The CURRENT production deployment and what crons it carries.
+          code, deps = api(f"/v6/deployments?{team_q}projectId={project}&target=production&state=READY&limit=1")
+          uid = url = None
+          if code == 200 and deps.get("deployments"):
+              d = deps["deployments"][0]
+              uid, url = d.get("uid"), d.get("url")
+              print(f"CURRENT prod deployment: {url} created {d.get('created')}")
+          if uid:
+              code, dep = api(f"/v13/deployments/{uid}?{team_q}")
+              print(f"DEPLOYMENT crons (v13, HTTP {code}): {json.dumps(dep.get('crons'))[:500]}")
+              cfg = dep.get("config") or {}
+              print(f"DEPLOYMENT config keys: {sorted(cfg.keys()) if cfg else sorted(k for k in dep.keys())[:40]}")
+          # 3. If the project says crons are DISABLED, try to enable them.
+          if isinstance(crons, dict) and crons.get("disabledAt"):
+              print(f"crons DISABLED at {crons['disabledAt']} — attempting enable via project PATCH")
+              for payload in ({"crons": {"enabled": True}},):
+                  code, r = api(f"/v9/projects/{project}?{team_q}", payload, "PATCH")
+                  print(f"PATCH enable attempt: HTTP {code} {json.dumps(r)[:300]}")
+          # 4. Fluid-compute machine tier: the refresh pipeline needs the
+          # 4GB performance tier; per-function vercel.json memory did not
+          # take effect under fluid. Idempotent upgrade attempt.
+          code, body = api(f"/v9/projects/{project}?{team_q}")
+          rc = (body.get("resourceConfig") or {}) if code == 200 else {}
+          print(f"resourceConfig: {json.dumps(rc)[:300]}")
+          if rc.get("functionDefaultMemoryType") != "performance":
+              code2, r2 = api(f"/v9/projects/{project}?{team_q}",
+                              {"resourceConfig": {"functionDefaultMemoryType": "performance"}}, "PATCH")
+              print(f"PATCH functionDefaultMemoryType=performance: HTTP {code2} {json.dumps(r2)[:250]}")
+          PY

@@ -1,0 +1,85 @@
+name: Send TEMPO Due Messages (manual)
+
+# MANUAL TESTER ONLY. Production sending happens inside the
+# "Refresh TEMPO REDCap Data" pipeline (fetch → send → commit → deploy),
+# gated by the SEND_LIVE repo variable. Use this dispatch to run a
+# one-off send cycle — defaults to dry-run so it's always safe to poke.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true = preview only, no actual sends"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      recovery:
+        description: "true = ALSO fire staged recovery-sends.json (July catch-up)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: write
+
+# Same group as the refresh pipeline: a manual send can never race a
+# scheduled refresh on the data files / sent-log.
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Refresh due-reminders from REDCap + Google Sheet
+        env:
+          REDCAP_API_URL: ${{ secrets.REDCAP_API_URL }}
+          REDCAP_API_TOKEN: ${{ secrets.REDCAP_API_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: node --max-old-space-size=6144 scripts/fetch-data.mjs
+
+      - name: Fire due messages
+        env:
+          REDCAP_API_URL: ${{ secrets.REDCAP_API_URL }}
+          REDCAP_API_TOKEN: ${{ secrets.REDCAP_API_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          QUO_API_KEY: ${{ secrets.QUO_API_KEY }}
+          QUO_FROM_NUMBER: ${{ secrets.QUO_FROM_NUMBER }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          RECOVERY: ${{ github.event.inputs.recovery }}
+        run: node scripts/send-due-messages.mjs
+
+      - name: Commit updated data and logs
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add private/data/ 2>/dev/null || true
+          # --autostash: npm install dirties package-lock.json (rebase
+          # must not refuse over that noise). -X theirs: conflicts on
+          # generated data files resolve toward OUR replayed commit.
+          git diff --staged --quiet || { git commit -m "TEMPO send-cycle [$(date -u '+%Y-%m-%d %H:%M UTC')]"; git pull --rebase --autostash -X theirs origin main && git push; } || { git rebase --abort 2>/dev/null; git pull --rebase --autostash -X theirs origin main && git push; }

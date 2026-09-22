@@ -1,0 +1,22 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Participant data — lives in a separate PRIVATE repository
+private/
+data/
+
+# Build + deps
+node_modules/
+.next/
+out/
+src/generated/
+*.tsbuildinfo
+.vercel/
+
+# OS, editor and local tool config
+.DS_Store
+.idea/
+.vscode/
+.claude/

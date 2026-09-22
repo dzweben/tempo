@@ -1,0 +1,124 @@
+name: EMA Prompt Sender (RETIRED — manual dry-run only)
+
+# RETIRED 2026-09-18. GitHub Actions no longer sends EMA prompts.
+# GitHub's cron scheduler starved this repo for two weeks (firings hours
+# late; 21+ prompts protocol-skipped) and cannot be trusted with
+# minute-precision delivery. The production sender is now the Vercel
+# route /api/ema-sweep, driven by Vercel Pro's minute cron — it reads
+# the schedule and ledger live from this repo's contents API, sends at
+# the slot, and writes the ledger back. the backstop machine is the independent
+# late backstop. Carrier-history dedup keeps every sender at-most-once.
+#
+# This workflow survives ONLY for manual dry-run rehearsals against the
+# schedule file. All cron schedules removed — it can never fire on its
+# own, and defaults to dry_run=true when dispatched.
+on:
+  workflow_dispatch:
+    inputs:
+      segment:
+        description: "Which authority window"
+        required: false
+        default: "all"
+        type: choice
+        options: ["all", "morning", "midday", "evening"]
+      dry_run:
+        description: "true = walk everything, transmit nothing"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write
+
+# NOT the refresh group: this job runs for hours and must never block
+# the 30-min data pipeline. It touches only ema-sent-log.json, pushed
+# with rebase -X theirs, so the two never conflict on files.
+#
+# Group is the SEGMENT (all three of a segment's crons map to one group)
+# so redundant firings serialize instead of double-sending: the backup
+# queues behind a healthy primary and exits at the gate when it finally
+# runs; if the primary never started, the backup starts immediately.
+concurrency:
+  group: ema-prompt-sender-${{ github.event_name != 'schedule' && (inputs.segment || 'manual') || (contains('|10 10 * * *|35 10 * * *|5 11 * * *|', format('|{0}|', github.event.schedule)) && 'morning') || (contains('|10 15 * * *|35 15 * * *|5 16 * * *|', format('|{0}|', github.event.schedule)) && 'midday') || 'evening' }}
+  cancel-in-progress: false
+
+jobs:
+  send-prompts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pick segment from cron slot
+        id: seg
+        working-directory: ${{ github.workspace }}
+        run: |
+          case "${{ github.event.schedule }}" in
+            "10 10 * * *"|"35 10 * * *"|"5 11 * * *") SEG=morning ;;
+            "10 15 * * *"|"35 15 * * *"|"5 16 * * *") SEG=midday ;;
+            "10 20 * * *"|"35 20 * * *"|"5 21 * * *") SEG=evening ;;
+            *) SEG="${{ inputs.segment || 'all' }}" ;;
+          esac
+          echo "segment=$SEG" >> "$GITHUB_OUTPUT"
+          echo "Running segment: $SEG"
+
+      - name: Skip if nothing actionable in this segment today
+        id: gate
+        run: |
+          node -e '
+            const fs = require("fs");
+            let rows = [], ledger = [];
+            try { rows = JSON.parse(fs.readFileSync("private/data/ema-prompt-schedule.json","utf8")); } catch {}
+            try { ledger = JSON.parse(fs.readFileSync("private/data/ema-sent-log.json","utf8")); } catch {}
+            // A prompt is actionable if it is in this segment window today,
+            // not already terminal in the REAL ledger (a redundant/queued
+            // firing behind a healthy primary exits here), and not already
+            // beyond the 30-min grace (a fresh job could only protocol-skip
+            // it — the morning audit flags those as unaccounted instead).
+            const TERMINAL = new Set(["sent","skipped_late","skipped"]);
+            const done = new Set(ledger.filter(e => TERMINAL.has(e.status) && !e.dryRun).map(e => e.key));
+            const seg = "${{ steps.seg.outputs.segment }}";
+            const win = { morning:[410,710], midday:[710,1010], evening:[1010,1280], all:[0,1440] }[seg];
+            const today = new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"});
+            const due = rows.filter(r => {
+              const d = new Date(r.sendAt);
+              if (d.toLocaleDateString("en-CA",{timeZone:"America/New_York"}) !== today) return false;
+              const [h,m] = d.toLocaleString("en-US",{timeZone:"America/New_York",hour12:false,hour:"2-digit",minute:"2-digit"}).split(":").map(Number);
+              const mins = (h===24?0:h)*60+m;
+              if (mins < win[0] || mins >= win[1]) return false;
+              if (d.getTime() < Date.now() - 35*60*1000) return false;
+              return !done.has(`${r.pid}|${r.wave}|${r.key}`);
+            });
+            console.log(`${due.length} actionable prompt(s) in ${seg} window today`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `count=${due.length}\n`);
+          '
+
+      - name: Set up Node.js
+        if: steps.gate.outputs.count != '0'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run precision sender
+        if: steps.gate.outputs.count != '0'
+        env:
+          QUO_API_KEY: ${{ secrets.QUO_API_KEY }}
+          QUO_FROM_NUMBER: ${{ secrets.QUO_FROM_NUMBER }}
+          SEGMENT: ${{ steps.seg.outputs.segment }}
+          DRY_RUN: ${{ inputs.dry_run || (vars.SEND_LIVE == 'true' && 'false' || 'true') }}
+        run: node scripts/send-ema-prompts.mjs
+
+      - name: Final ledger push
+        if: always() && steps.gate.outputs.count != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add private/data/ema-sent-log.json 2>/dev/null || true
+          git diff --staged --quiet || { git commit -m "ema prompt ledger [$(date -u '+%Y-%m-%d %H:%M UTC')]"; git pull --rebase --autostash -X theirs origin main && git push; }

@@ -1,0 +1,15 @@
+[
+  {
+    "key": "1001|1|ema_mon_1000",
+    "pid": "1001",
+    "wave": 1,
+    "promptKey": "ema_mon_1000",
+    "status": "sent",
+    "channel": "sms",
+    "recipient": "+15550100002",
+    "sendAt": "2026-01-19T15:00:00.000Z",
+    "at": "2026-01-19T15:00:02.041Z",
+    "latencySec": 2,
+    "note": "sender"
+  }
+]

@@ -1,0 +1,53 @@
+name: Daily Server Audit
+
+# Every morning: reconcile yesterday's planned sends against the
+# ledgers, check infrastructure health, and publish the report to the
+# dashboard's Daily Audit tab. Runs before the day's first send window
+# so a RED verdict is visible before anything else fires.
+on:
+  schedule:
+    - cron: "45 10 * * *"   # ~6:45 AM ET
+  workflow_dispatch:
+    inputs:
+      audit_date:
+        description: "Date to audit (YYYY-MM-DD, default yesterday ET)"
+        required: false
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate audit report (mechanical reconciliation)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEND_LIVE: ${{ vars.SEND_LIVE }}
+          AUDIT_DATE: ${{ inputs.audit_date }}
+        run: node scripts/daily-audit.mjs
+
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add private/data/audits/
+          git diff --staged --quiet || { git commit -m "daily audit [$(date -u '+%Y-%m-%d')]"; git pull --rebase --autostash -X theirs origin main && git push; }

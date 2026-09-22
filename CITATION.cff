@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: "TEMPO: Tracking, Engagement, Messaging & Participant Outreach"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Zweben
+    given-names: Danny
+    affiliation: Temple University
+repository-code: "https://github.com/dzweben/tempo"
+abstract: >-
+  A self-hosted server for research studies that send scheduled surveys and
+  reminders. TEMPO integrates a survey database of record with SMS and email
+  providers and turns a declarative timeline of study messages into precisely
+  timed, auditable outreach: momentary-assessment prompt grids, recurring
+  survey cycles with conditional follow-up cadences, visit and compensation
+  reminders, and just-in-time personal survey links. It includes a coordinator
+  dashboard for completion tracking and a daily reconciliation audit, and a
+  delivery path designed for at-most-once guarantees under real-world failure.
+keywords:
+  - ecological momentary assessment
+  - REDCap
+  - research software
+  - participant management
+  - longitudinal studies
+  - SMS
+  - survey automation
+  - clinical research informatics
+license: MIT
+version: 1.0.0
+date-released: 2026-09-22

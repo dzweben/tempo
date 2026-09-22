@@ -1,0 +1,242 @@
+name: Refresh TEMPO REDCap Data
+
+on:
+  schedule:
+    # Every 30 minutes across REDCap's uptime. The cron is only a coarse
+    # attempt-limiter — GitHub's scheduler delays runs unpredictably (we've
+    # seen a 12:30 AM ET slot fire at 2 AM ET), and UTC cron can't follow
+    # DST. The REAL enforcement is the "Gate on REDCap uptime" step below,
+    # which checks actual Eastern time at RUN time and skips the whole job
+    # during REDCap's nightly downtime (~12:40 AM – 7:00 AM ET).
+    - cron: "0,30 11-23 * * *"   # ~7 AM – 7:30 PM ET
+    - cron: "0,30 0-5 * * *"     # ~8 PM – 12:30 AM ET (hr 5 covers EST)
+    # Off-peak extras (Sept 2026 cron starvation — see ema-prompt-sender):
+    # :00/:30 are the most contended minutes on GitHub's scheduler. These
+    # odd-minute duplicates give each half-hour a second firing chance.
+    - cron: "13,43 11-23 * * *"
+    - cron: "13,43 0-5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialize runs. The pipeline fetches → commits → `git pull --rebase`
+# → vercel build/deploy, all against the same data files. If two runs
+# overlap, a deploy can grab a participants.json that another run is
+# mid-rebase / mid-write on, shipping a TRUNCATED file the API can't
+# parse (dashboard renders empty). cancel-in-progress:false makes each
+# run finish fully before the next starts, so a deploy always sees a
+# consistent, fully-written file.
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      # Enforce REDCap's uptime window at RUN time (DST-correct via
+      # America/New_York). If GitHub launched this job during REDCap's
+      # nightly downtime (~12:40 AM – 7:00 AM ET) — whether by a delayed
+      # schedule or otherwise — skip every real step so the run is a clean
+      # green no-op instead of a failure + pointless REDCap hit.
+      - name: Gate on REDCap uptime (Eastern)
+        id: gate
+        working-directory: ${{ github.workspace }}
+        run: |
+          H=$(TZ=America/New_York date +%H)
+          M=$(TZ=America/New_York date +%M)
+          if { [ "$H" -eq 0 ] && [ "$M" -ge 40 ]; } || { [ "$H" -ge 1 ] && [ "$H" -le 6 ]; }; then
+            echo "REDCap downtime (${H}:${M} ET) — skipping this run."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "REDCap uptime (${H}:${M} ET) — proceeding."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout repo
+        if: steps.gate.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # ref: main = the branch TIP at checkout time. Without it, a
+          # workflow_dispatch run pins the sha from DISPATCH time — a run
+          # queued behind an in-flight one starts on a snapshot missing
+          # that run's ledger commits, and resends everything it can't
+          # see (2026-08-09 double-send incident).
+          ref: main
+
+      - name: Sync latest ledgers (second belt vs stale checkout)
+        if: steps.gate.outputs.skip != 'true'
+        run: git pull --rebase --autostash -X theirs origin main || true
+
+      - name: Set up Node.js
+        if: steps.gate.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Fetch data from REDCap + Google Sheet
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          REDCAP_API_URL: ${{ secrets.REDCAP_API_URL }}
+          REDCAP_API_TOKEN: ${{ secrets.REDCAP_API_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: node --max-old-space-size=6144 scripts/fetch-data.mjs
+
+      # Send immediately after the fetch, so every send decision runs
+      # against completion data that is MINUTES old (the send-time
+      # re-check: a reminder only exists in due-reminders.json if its
+      # survey is still incomplete as of the fetch above).
+      #
+      # LIVE/KILL SWITCH: repo variable SEND_LIVE.
+      #   gh variable set SEND_LIVE --body true    → real sends
+      #   gh variable set SEND_LIVE --body false   → dry-run (default)
+      # No commit needed to flip it.
+      - name: Install dependencies (sender)
+        if: steps.gate.outputs.skip != 'true'
+        run: npm install --no-audit --no-fund
+
+      # SENDER_LEG variable decides which system transmits (the Vercel
+      # /api/refresh live pipeline reads the same variable): exactly one
+      # leg may ever send.
+      - name: Send due messages
+        if: steps.gate.outputs.skip != 'true' && vars.SENDER_LEG != 'vercel'
+        env:
+          REDCAP_API_URL: ${{ secrets.REDCAP_API_URL }}
+          REDCAP_API_TOKEN: ${{ secrets.REDCAP_API_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          QUO_API_KEY: ${{ secrets.QUO_API_KEY }}
+          QUO_FROM_NUMBER: ${{ secrets.QUO_FROM_NUMBER }}
+          DRY_RUN: ${{ vars.SEND_LIVE == 'true' && 'false' || 'true' }}
+        run: node scripts/send-due-messages.mjs
+
+      # EMA WATCHDOG REMOVED 2026-09-18: it used to re-dispatch the
+      # GitHub prompt sender when a segment job was missing. EMA sending
+      # now lives entirely on the Vercel minute-cron route — GitHub must
+      # never dispatch an EMA sender again (user order: "stop using
+      # github" for sending).
+
+      # SENDER PING: one extra idempotent invocation of the Vercel EMA
+      # sender per refresh, on top of its own minute-cron — a free
+      # liveness probe (carrier-history dedup makes double-invocation
+      # harmless). Skips quietly until the SWEEP_SECRET is
+      # provisioned.
+      - name: Ping EMA sweeper (Vercel backstop)
+        if: always() && steps.gate.outputs.skip != 'true'
+        env:
+          SWEEP_SECRET: ${{ secrets.SWEEP_SECRET }}
+        run: |
+          if [ -z "$SWEEP_SECRET" ]; then echo "no SWEEP_SECRET yet — ping skipped"; exit 0; fi
+          curl -fsS -m 50 -H "x-sweep-secret: $SWEEP_SECRET" \
+            "https://YOUR-DEPLOYMENT.vercel.app/api/ema-sweep?trigger=refresh-workflow" \
+            || echo "sweep ping failed (non-fatal — sweeper is a backstop)"
+
+      # ALWAYS commit (even if the send step failed with partial sends):
+      # the sent-log is the idempotency ledger — losing it would re-send
+      # every message that DID go out.
+      - name: Commit and push updated data
+        if: always() && steps.gate.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Ledgers are append-only: union with origin BEFORE committing so
+          # the -X theirs rebase below can never erase another run's rows.
+          node scripts/merge-ledgers.mjs || true
+          # ONE FILE PER git add. `git add A B` refuses to stage ANYTHING
+          # when any single pathspec matches no file, and `2>/dev/null ||
+          # true` hides that refusal — pairing the schedule with the
+          # then-nonexistent overrides file silently unstaged the schedule
+          # on EVERY run (found via the 2026-08-24 delivery drill).
+          git add private/data/participants.json 2>/dev/null || true
+          git add private/data/due-reminders.json 2>/dev/null || true
+          git add private/data/last-fetch.json 2>/dev/null || true
+          git add private/data/sent-log.json 2>/dev/null || true
+          git add private/data/send-state.json 2>/dev/null || true
+          git add private/data/send-candidates.json 2>/dev/null || true
+          git add private/data/recovery-sends.json 2>/dev/null || true
+          git add private/data/ema-prompt-schedule.json 2>/dev/null || true
+          git add private/data/ema-anchor-overrides.json 2>/dev/null || true
+          # --quiet on `diff --cached` (staged index) — covers both
+          # modified-tracked and brand-new-untracked files.
+          if git diff --cached --quiet; then
+            echo "No data changes to commit."
+          else
+            git commit -m "Auto-refresh TEMPO REDCap data [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+            # Rebase on top of any commit that landed since checkout.
+            # -X theirs: if a concurrent run pushed its own data commit,
+            # conflicts on these GENERATED files resolve in favor of OUR
+            # just-fetched version (during rebase, "theirs" = the commit
+            # being replayed, i.e. ours) — freshest fetch always wins.
+            # On any residual failure, abort the rebase so no conflicted
+            # half-state (markers inside a 9MB JSON) reaches later steps.
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash -X theirs origin main && git push && break
+              git rebase --abort 2>/dev/null || true
+              echo "push retry $attempt failed, sleeping…"
+              sleep 5
+            done
+            # Final integrity check: if the tree is still mid-rebase or
+            # conflicted, hard-reset to our own committed state so the
+            # validate step sees clean files.
+            git rebase --abort 2>/dev/null || true
+            git checkout -- private/data/ 2>/dev/null || true
+          fi
+
+      - name: Validate data files before deploy
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          set -e
+          # Hard gate: never deploy a file that won't parse. If the fetch
+          # or a rebase produced truncated/corrupt JSON, fail here so the
+          # last known-good deploy stays live instead of shipping an
+          # empty dashboard.
+          for f in participants due-reminders last-fetch; do
+            node -e "JSON.parse(require('fs').readFileSync('private/data/$f.json','utf8'))" \
+              || { echo "::error::private/data/$f.json is not valid JSON — aborting deploy"; exit 1; }
+          done
+          # Sanity floor: participants.json must hold a non-trivial roster.
+          node -e "const d=JSON.parse(require('fs').readFileSync('private/data/participants.json','utf8')); if(!Array.isArray(d.participants)||d.participants.length<100){console.error('::error::participants.json has only',(d.participants||[]).length,'records — aborting deploy');process.exit(1)} console.log('Validated',d.participants.length,'participants')"
+
+      # Dashboard deploys are THROTTLED to ~every 2 hours: Vercel's free
+      # tier caps source uploads at 5000/day, and deploying on all ~46
+      # refresh runs exhausted it (Aug 9) — deploys then fail for 24h.
+      # Data commits + message sending happen ABOVE this step, so a
+      # skipped or failed deploy only means the dashboard shows data up
+      # to 2h old; texts/emails are never affected. Manual dispatches
+      # always deploy (that's a human asking to see fresh data).
+      - name: Decide whether to deploy dashboard
+        id: deploygate
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          H=$(TZ=America/New_York date +%-H); M=$(TZ=America/New_York date +%-M)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || { [ $((H % 2)) -eq 0 ] && [ "$M" -lt 10 ]; }; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"; echo "Deploying (hour=$H min=$M event=${{ github.event_name }})"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"; echo "Skipping dashboard deploy this run (hour=$H min=$M) — next even-hour run deploys"
+          fi
+
+      - name: Deploy to Vercel
+        if: steps.gate.outputs.skip != 'true' && steps.deploygate.outputs.deploy == 'true'
+        continue-on-error: true   # a Vercel outage/quota must never red a run whose sends already succeeded
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -e
+          npm install -g vercel
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          # Server-side build — NEVER --prebuilt: prebuilt deploys silently
+          # drop vercel.json cron registration (killed the Stage A minute-
+          # clock 5 hours after launch, 2026-09-15).
+          DEPLOY_URL=$(vercel deploy --prod --token=$VERCEL_TOKEN)
+          echo "Deployed to: $DEPLOY_URL"
+          if [ -n "$DEPLOY_URL" ]; then
+            vercel alias set "$DEPLOY_URL" YOUR-DEPLOYMENT.vercel.app --token=$VERCEL_TOKEN
+          fi

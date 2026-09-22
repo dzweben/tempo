@@ -1,0 +1,14 @@
+[
+  {
+    "pid": "1001",
+    "recordId": "1001",
+    "wave": 1,
+    "key": "ema_mon_1000",
+    "reportNum": 1,
+    "dayLabel": "Monday",
+    "timeLabel": "10:00 AM",
+    "sendAt": "2026-01-19T15:00:00.000Z",
+    "phone": "(555) 010-0002",
+    "surveyLink": "https://survey.example.org/?s=EXAMPLE2"
+  }
+]

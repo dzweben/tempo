@@ -1,0 +1,13 @@
+[
+  {
+    "pid": "1001",
+    "recordId": "1001",
+    "wave": 1,
+    "alertId": 2,
+    "kind": "sts1_followup",
+    "instrument": "Monthly Survey Follow-up 1.1",
+    "scheduledAt": "2026-01-23T22:00:00.000Z",
+    "complete": false,
+    "surveyLink": "https://survey.example.org/?s=EXAMPLE1"
+  }
+]
