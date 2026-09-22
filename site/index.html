@@ -145,17 +145,15 @@ footer a{color:var(--teal-700)}
   <h1>TEMPO</h1>
   <div class="sub">Tracking, Engagement, Messaging &amp; Participant Outreach</div>
   <p class="lede">
-    A survey platform already holds everything an outreach protocol needs: the roster,
-    a personal survey link per participant, the date fields a schedule hangs off, and a
-    completion flag on every form. Messaging APIs sit on the other side.
-    <strong>TEMPO is the part in between</strong> — it reads the first, computes who is owed
-    what and when, sends by SMS and email at that moment, and writes down what it did.
+    A survey platform holds the roster, a survey link per participant, date fields, and a
+    completion flag on every form. Messaging APIs handle SMS and email.
+    <strong>TEMPO connects the two:</strong> it reads the survey platform, works out which
+    participants are due a message and when, sends it, and logs the result.
   </p>
   <p class="lede">
-    The result runs itself. Nobody has to remember to send anything, and every message
-    is accounted for afterwards. That holds for a reminder due sometime next Tuesday and
-    for <strong>a momentary-assessment prompt that has to land at 7:34 PM exactly</strong>,
-    twenty-five times across a sampling period.
+    Once the schedule is declared, it runs unattended. This covers reminders due on a given
+    day and <strong>EMA prompts that have to fire at an exact minute</strong>, 25 times across
+    a sampling period.
   </p>
   <div class="actions">
     <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -167,21 +165,20 @@ footer a{color:var(--teal-700)}
   <div class="kicker">How it works</div>
   <h2>Dates in, messages out</h2>
   <p class="intro">
-    Every automated message is declared once. A pipeline expands those declarations against
-    the current export into a queue of dated rows; senders drain the queue on a clock.
+    Each message is declared once. The pipeline expands the declarations against the current
+    export into dated rows. Senders drain that queue on a clock.
   </p>
 
   <div class="flow">
-    <div class="fstep"><b>1 · Pull</b><span>Export records, date fields and completion flags. Resolve each participant's personal survey link.</span></div>
-    <div class="fstep"><b>2 · Compute</b><span>Turn each declaration into an exact timestamp: a date field plus an offset, gated on a completion flag.</span></div>
-    <div class="fstep"><b>3 · Send</b><span>Transmit what is due over SMS and email, with the participant's own link substituted in.</span></div>
-    <div class="fstep"><b>4 · Record</b><span>Append to a ledger, so the same message can never go twice and every send is auditable.</span></div>
+    <div class="fstep"><b>1 · Pull</b><span>Export records, date fields and completion flags. Resolve each participant's survey link.</span></div>
+    <div class="fstep"><b>2 · Compute</b><span>Turn each declaration into a timestamp: a date field plus an offset, gated on a completion flag.</span></div>
+    <div class="fstep"><b>3 · Send</b><span>Send what is due over SMS and email, with the participant's link substituted in.</span></div>
+    <div class="fstep"><b>4 · Record</b><span>Append to a ledger so the same message cannot go twice.</span></div>
   </div>
 
   <p>
-    Nothing about this is tied to one vendor. The reference build speaks REDCap, OpenPhone and
-    Gmail SMTP, but the contract is small enough that Qualtrics, Twilio, SES or anything similar
-    slots in by reimplementing a handful of calls.
+    The build here uses REDCap, OpenPhone and Gmail SMTP. Swapping any of them means
+    reimplementing a few calls &mdash; Qualtrics, Twilio and SES expose the same primitives.
   </p>
 
   <div class="tw">
@@ -199,12 +196,11 @@ footer a{color:var(--teal-700)}
   <div class="kicker">Sample code</div>
   <h2>What it looks like in practice</h2>
   <p class="intro">
-    Field names below are illustrative — in a deployment they are your own event and
-    instrument names.
+    Field names below are placeholders for your own event and instrument names.
   </p>
 
   <h3>Declaring a message</h3>
-  <p>One entry: when it is owed, when it fires, where it goes, and what it says.</p>
+  <p>One entry: when it is owed, when it fires, where it goes, what it says.</p>
 <pre><code>{
   instrument: <span class="s">"Follow-up reminder"</span>,
 
@@ -226,15 +222,15 @@ footer a{color:var(--teal-700)}
 
   <h3>Computing the send time</h3>
   <p>
-    The spec is resolved per participant against their own dates. A repeat stops the moment
-    the completion flag flips, so whoever responds stops being chased.
+    Resolved per participant against their own dates. Repeats stop when the completion flag
+    flips, so responders are not chased.
   </p>
 <pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
 <span class="k">const</span> { offsetDays, everyDays, maxTimes } = parseSpec(alert.sendDateSpec);
 
 <span class="k">const</span> sends = [];
 <span class="k">for</span> (<span class="k">let</span> n = <span class="s">0</span>; n &lt; maxTimes; n++) {
-  <span class="k">if</span> (isComplete(participant, alert.condition)) <span class="k">break</span>;   <span class="c">// responded — stop</span>
+  <span class="k">if</span> (isComplete(participant, alert.condition)) <span class="k">break</span>;   <span class="c">// responded, stop</span>
   sends.push(atStudyTime(addDays(anchor, offsetDays + n * everyDays), <span class="s">"17:00"</span>));
 }
 <span class="c">// → 2026-03-18T17:00, 2026-03-25T17:00, 2026-04-01T17:00</span></code></pre>
@@ -257,41 +253,35 @@ footer a{color:var(--teal-700)}
 
   <h3>Not sending it twice</h3>
   <p>
-    Delivery is the one step that cannot be undone, so at-most-once is enforced three
-    independent ways — each catches what the others miss.
+    Sending cannot be undone, so at-most-once is enforced three separate ways.
   </p>
   <div class="tw">
   <table>
     <tr><th>Mechanism</th><th>What it catches</th></tr>
     <tr><td><strong>Append-only ledger</strong><br><code>pid|alert|time|channel|recipient</code></td><td>The ordinary case: a rerun, a retry, an overlapping schedule</td></tr>
-    <tr><td><strong>Claim before transmit</strong></td><td>Two invocations racing the same moment — only one wins the claim</td></tr>
+    <tr><td><strong>Claim before transmit</strong></td><td>Two runs hitting the same slot; only one wins the claim</td></tr>
     <tr><td><strong>Provider history check</strong></td><td>A send that happened but whose ledger write was lost</td></tr>
   </table>
   </div>
   <p>
-    Around those sit the ordinary guards: quiet hours, an opt-out list checked twice, a
-    per-run cap, a refusal to send any message whose survey link did not resolve, dry-run by
-    default, and a runtime kill switch that takes effect without a redeploy. Timed prompts
-    wait inside the invocation and fire on the second rather than trusting a scheduler's
-    punctuality; one that cannot make its window is recorded as a skip instead of arriving late.
+    Other guards: quiet hours, an opt-out list checked at queue time and again at send time,
+    a per-run cap, no send if the survey link did not resolve, dry-run by default, and a kill
+    switch that takes effect without a redeploy.
   </p>
 </section>
 
 <section id="ema">
   <div class="kicker">Momentary assessment</div>
-  <h2>Prompts that have to land on the minute</h2>
+  <h2>Prompts on the minute</h2>
   <p class="intro">
-    Most outreach tolerates slack — a reminder is fine an hour late. Ecological momentary
-    assessment is not like that. A prompt is a measurement instrument: it asks what someone
-    is doing right now, so one that arrives forty minutes late does not produce late data,
-    it produces wrong data, and a participant who learns the prompts drift stops treating
-    them as momentary at all.
+    EMA prompts ask what someone is doing right now, so they have to arrive at the minute
+    they were scheduled for. Late is not useful.
   </p>
 
   <p>
-    TEMPO treats a sampling period as a grid — fixed weekday and clock-time slots anchored
-    to each participant's own start date — and materializes it into individually dated rows
-    with the participant's chosen contact number and pre-resolved survey link attached.
+    A sampling grid is a set of fixed weekday and clock-time slots. It gets anchored to each
+    participant's start date and expanded into dated rows, each carrying their phone number
+    and survey link.
   </p>
 
 <pre><code><span class="c">// A sampling grid: slots repeat across the period, anchored per participant.</span>
@@ -310,11 +300,11 @@ footer a{color:var(--teal-700)}
 }</code></pre>
 
   <p>
-    Delivery does not trust the scheduler to be punctual. The sender is invoked on a coarse
-    clock, finds any slot arriving within its look-ahead, and <strong>waits inside the
-    invocation</strong> to transmit on the second. Before firing it claims the slot, so two
-    concurrent invocations cannot both send. A prompt that cannot make its window inside a
-    fixed grace period is recorded as a protocol skip rather than delivered late.
+    Schedulers are not punctual, so the sender does not rely on being invoked at the right
+    moment. It runs on a coarse clock, picks up any slot inside its look-ahead window, and
+    waits in-process until the exact second. It claims the slot before transmitting, so two
+    overlapping runs cannot both send. Past the grace window a prompt is recorded as skipped
+    rather than sent late.
   </p>
 
 <pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
@@ -327,9 +317,8 @@ footer a{color:var(--teal-700)}
 }</code></pre>
 
   <p>
-    In production this lands prompts within a couple of seconds of their scheduled second,
-    and the latency is recorded per message — so drift is something you can see in the
-    ledger rather than something you discover in the data.
+    Measured latency in production is 2–4 seconds past the scheduled second. It is written
+    to the ledger per message.
   </p>
 </section>
 
@@ -337,40 +326,40 @@ footer a{color:var(--teal-700)}
   <div class="kicker">The server</div>
   <h2>A dashboard over the whole thing</h2>
   <p class="intro">
-    The same files the senders write are what the dashboard reads — no second database, no
-    reporting layer to keep in sync. Screens below run on synthetic data.
+    The dashboard reads the same files the senders write. No second database. Screens below
+    run on synthetic data.
   </p>
 
   <figure>
     <img src="img/dash-overview.png" alt="Overview screen showing participant totals, messages due in the next seven days, and a per-wave completion table" loading="lazy">
-    <figcaption>Where the study stands: totals, what is due, and completion broken out by phase.</figcaption>
+    <figcaption>Totals, what is due, and completion by phase.</figcaption>
   </figure>
 
   <div class="shots">
     <figure>
       <img src="img/dash-queue.png" alt="Outgoing queue grouped by day, listing scheduled messages per participant" loading="lazy">
-      <figcaption>What is going out, grouped by day, before it goes out.</figcaption>
+      <figcaption>Scheduled messages, grouped by day.</figcaption>
     </figure>
     <figure>
       <img src="img/dash-sent.png" alt="Sent log listing each delivered message with channel, recipient and status" loading="lazy">
-      <figcaption>What already went out — message, channel, recipient, status.</figcaption>
+      <figcaption>What already went out, with channel, recipient and status.</figcaption>
     </figure>
   </div>
 
   <figure>
     <img src="img/dash-ema.png" alt="Momentary assessment tracker showing per-participant prompt completion against the sampling grid" loading="lazy">
-    <figcaption>Momentary-assessment tracking: completion against the grid, per participant, per period.</figcaption>
+    <figcaption>EMA completion against the grid, per participant.</figcaption>
   </figure>
 
   <figure>
     <img src="img/dash-participants.png" alt="Participant roster with per-participant status" loading="lazy">
-    <figcaption>The roster, with each participant's progress through the protocol.</figcaption>
+    <figcaption>The roster with each participant's progress.</figcaption>
   </figure>
 
   <p>
-    Access is a single shared password behind a signed cookie, checked in middleware on every
-    route. A daily reconciliation compares what was planned against what the ledger recorded,
-    so a message that quietly failed surfaces the next morning rather than at the end of the study.
+    Access is a shared password behind a signed cookie, checked in middleware on every route.
+    A daily job reconciles what was scheduled against what the ledger recorded and flags
+    anything missing.
   </p>
 </section>
 
