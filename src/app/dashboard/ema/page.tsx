@@ -21,16 +21,12 @@ export default function EMAPage() {
   }, []);
 
   const rows = useMemo(() => {
-    // EMA is a 13+ instrument — under-13 participants are never sent
-    // prompts, so they're filtered out entirely. Unknown age falls
-    // through (better to surface and let the coordinator notice than
-    // hide silently).
+    // Eligibility is protocol-specific. Restrict here if your study
+    // limits prompts to a subset of participants (an age floor, a
+    // consent flag, an enrollment arm); by default anyone with a cycle
+    // on file is shown.
     let xs = participants.filter(p => {
       if (!cohortMatches(p.pid, cohort)) return false;
-      // HARD STUDY RULE: cohort 1 (1000s) never gets EMA, at any age.
-      if (/^1\d{3}$/.test(p.pid)) return false;
-      const age = p.contact?.age;
-      if (typeof age === "number" && age < 13) return false;
       const w = p.waves[wave];
       return !!(w?.ema || w?.followupSheet);
     });

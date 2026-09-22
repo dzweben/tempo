@@ -132,6 +132,7 @@ footer a{color:var(--teal-700)}
   <div class="toplinks">
     <a href="#how">How it works</a>
     <a href="#code">Sample code</a>
+    <a href="#ema">Momentary assessment</a>
     <a href="#server">The server</a>
     <a href="https://github.com/dzweben/tempo">GitHub</a>
   </div>
@@ -152,7 +153,9 @@ footer a{color:var(--teal-700)}
   </p>
   <p class="lede">
     The result runs itself. Nobody has to remember to send anything, and every message
-    is accounted for afterwards.
+    is accounted for afterwards. That holds for a reminder due sometime next Tuesday and
+    for <strong>a momentary-assessment prompt that has to land at 7:34 PM exactly</strong>,
+    twenty-five times across a sampling period.
   </p>
   <div class="actions">
     <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -274,6 +277,62 @@ footer a{color:var(--teal-700)}
   </p>
 </section>
 
+<section id="ema">
+  <div class="kicker">Momentary assessment</div>
+  <h2>Prompts that have to land on the minute</h2>
+  <p class="intro">
+    Most outreach tolerates slack — a reminder is fine an hour late. Ecological momentary
+    assessment is not like that. A prompt is a measurement instrument: it asks what someone
+    is doing right now, so one that arrives forty minutes late does not produce late data,
+    it produces wrong data, and a participant who learns the prompts drift stops treating
+    them as momentary at all.
+  </p>
+
+  <p>
+    TEMPO treats a sampling period as a grid — fixed weekday and clock-time slots anchored
+    to each participant's own start date — and materializes it into individually dated rows
+    with the participant's chosen contact number and pre-resolved survey link attached.
+  </p>
+
+<pre><code><span class="c">// A sampling grid: slots repeat across the period, anchored per participant.</span>
+<span class="k">const</span> GRID = [
+  { day: <span class="s">"Mon"</span>, at: <span class="s">"08:10"</span> }, { day: <span class="s">"Mon"</span>, at: <span class="s">"13:45"</span> }, { day: <span class="s">"Mon"</span>, at: <span class="s">"19:20"</span> },
+  <span class="c">// … 25 slots across the sampling period</span>
+];
+
+<span class="k">for</span> (<span class="k">const</span> slot <span class="k">of</span> GRID) {
+  schedule.push({
+    pid: participant.id,
+    sendAt: atStudyTime(nextWeekday(startDay, slot.day), slot.at),
+    phone: participant.fields[<span class="s">"prompt_phone"</span>],
+    surveyLink: <span class="k">await</span> resolveLink(participant, slot.form),
+  });
+}</code></pre>
+
+  <p>
+    Delivery does not trust the scheduler to be punctual. The sender is invoked on a coarse
+    clock, finds any slot arriving within its look-ahead, and <strong>waits inside the
+    invocation</strong> to transmit on the second. Before firing it claims the slot, so two
+    concurrent invocations cannot both send. A prompt that cannot make its window inside a
+    fixed grace period is recorded as a protocol skip rather than delivered late.
+  </p>
+
+<pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
+<span class="k">const</span> waitMs = slot.sendAt - Date.now();
+<span class="k">if</span> (waitMs &gt; <span class="s">0</span>) <span class="k">await</span> sleep(waitMs);
+
+<span class="k">if</span> (<span class="k">await</span> claim(slot.key)) {            <span class="c">// lost the race? another run has it</span>
+  <span class="k">await</span> sendSMS(slot.phone, render(slot));
+  <span class="k">await</span> ledger.append({ ...slot, status: <span class="s">"sent"</span>, latencySec: <span class="s">2</span> });
+}</code></pre>
+
+  <p>
+    In production this lands prompts within a couple of seconds of their scheduled second,
+    and the latency is recorded per message — so drift is something you can see in the
+    ledger rather than something you discover in the data.
+  </p>
+</section>
+
 <section id="server">
   <div class="kicker">The server</div>
   <h2>A dashboard over the whole thing</h2>
@@ -297,6 +356,11 @@ footer a{color:var(--teal-700)}
       <figcaption>What already went out — message, channel, recipient, status.</figcaption>
     </figure>
   </div>
+
+  <figure>
+    <img src="img/dash-ema.png" alt="Momentary assessment tracker showing per-participant prompt completion against the sampling grid" loading="lazy">
+    <figcaption>Momentary-assessment tracking: completion against the grid, per participant, per period.</figcaption>
+  </figure>
 
   <figure>
     <img src="img/dash-participants.png" alt="Participant roster with per-participant status" loading="lazy">

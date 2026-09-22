@@ -133,7 +133,9 @@ export function computeStats(participants: Participant[]): DashboardStats {
 
   for (const p of participants) {
     const isUnder13 = typeof p.contact?.age === "number" && p.contact.age < 13;
-    const emaExcluded = isUnder13 || /^1\d{3}$/.test(p.pid);  // cohort 1: never EMA
+    // Protocol-specific eligibility: restrict here if your study limits
+    // prompts to a subset of participants.
+    const emaExcluded = isUnder13;
     for (const w of WAVE_YEARS) {
       const wave = p.waves[w];
       if (!wave) continue;

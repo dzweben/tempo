@@ -224,16 +224,10 @@ async function tick(req: NextRequest) {
   }
   const optedOut = new Set(Object.keys(optOutRaw).filter(k => !k.startsWith("_")));
 
-  // HARD RULES carried from every sender before this one:
-  //  - cohort 1000-1999 never gets EMA texts, no matter what the
-  //    schedule file says;
-  //  - opted-out pids never get any text.
-  const eligible = schedule.filter(r => {
-    const n = Number(String(r.pid).replace(/\D/g, ""));
-    if (n >= 1000 && n <= 1999) return false;
-    if (optedOut.has(String(r.pid))) return false;
-    return true;
-  });
+  // Opted-out participants never receive a message, whatever the
+  // schedule file says. Add any further protocol-specific eligibility
+  // rules here — this filter is the last gate before the send window.
+  const eligible = schedule.filter(r => !optedOut.has(String(r.pid)));
   const due = eligible.filter(r => {
     const t = new Date(r.sendAt).getTime();
     return !isNaN(t) && now - t >= 0 && now - t <= GRACE_MS;

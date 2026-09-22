@@ -199,7 +199,6 @@ async function main() {
     let dirty = false;
 
     for (const row of schedule) {
-      { const n = Number(String(row.pid).replace(/\D/g, "")); if (n >= 1000 && n <= 1999) continue; } // HARD RULE: cohort 1 never gets EMA
       const at = new Date(row.sendAt).getTime();
       if (isNaN(at) || at > t) continue;                       // not yet
       const k = `${row.pid}|${row.wave}|${row.key}`;
