@@ -58,7 +58,7 @@ export default function OverviewPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">the study — Overview</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Overview</h2>
           <p className="text-sm text-gray-500 mt-1">
             Wave-by-wave participation, completion, and outgoing-message status.
           </p>
@@ -93,7 +93,7 @@ export default function OverviewPage() {
                   <th className="text-center px-4 py-3 font-semibold">Active</th>
                   <th className="text-center px-4 py-3 font-semibold">V1 done</th>
                   <th className="text-center px-4 py-3 font-semibold">At-home done</th>
-                  <th className="text-center px-4 py-3 font-semibold">STS done (≥5/9)</th>
+                  <th className="text-center px-4 py-3 font-semibold">Cycles done</th>
                   <th className="text-center px-4 py-3 font-semibold">EMA done (≥10/25)</th>
                   <th className="text-center px-4 py-3 font-semibold">V2 done</th>
                 </tr>
@@ -185,7 +185,7 @@ function EmptyState() {
       </div>
       <h3 className="text-lg font-semibold text-gray-900">Waiting for first REDCap fetch</h3>
       <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
-        Once the Refresh TEMPO REDCap Data workflow has run once with valid <code className="px-1 py-0.5 bg-gray-100 rounded">REDCAP_API_TOKEN</code> set,
+        Once the data pipeline has run once with a valid <code className="px-1 py-0.5 bg-gray-100 rounded">REDCAP_API_TOKEN</code> set,
         the participant directory will appear here.
       </p>
     </div>
@@ -196,7 +196,7 @@ function FetchBanner({ lastFetch }: { lastFetch: LastFetch | null }) {
   if (!lastFetch?.timestamp) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 flex items-center justify-between">
-        <span>No REDCap fetch has run yet. The Refresh TEMPO REDCap Data workflow needs to be triggered.</span>
+        <span>No data pipeline run recorded yet.</span>
       </div>
     );
   }

@@ -2,10 +2,7 @@
 
 **Tracking, Engagement, Messaging & Participant Outreach**
 
-**[Documentation](https://dzweben.github.io/tempo/)** ·
-[Quickstart](https://dzweben.github.io/tempo/docs/quickstart) ·
-[Timeline spec](https://dzweben.github.io/tempo/docs/timeline-spec) ·
-[Adapting it to your study](https://dzweben.github.io/tempo/docs/adapting)
+**[dzweben.github.io/tempo](https://dzweben.github.io/tempo/)**
 
 A self-hosted server for any research study that sends scheduled surveys and
 reminders. If your participants have dates attached to them — an enrollment

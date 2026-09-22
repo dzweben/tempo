@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/dashboard/sts",
-    label: "Screen Time Surveys",
+    label: "Survey Cycles",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -128,7 +128,7 @@ export default function DashboardShell({
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-900 tracking-tight">
-                TEMPO · the study
+                TEMPO
               </h1>
               <p className="text-xs text-gray-500">Server Dashboard</p>
             </div>
@@ -159,9 +159,8 @@ export default function DashboardShell({
 
           <div className="px-6 py-4 border-t border-gray-200">
             <p className="text-xs text-gray-400">
-              Your Lab
+              {process.env.NEXT_PUBLIC_STUDY_NAME || "TEMPO"}
             </p>
-            <p className="text-xs text-gray-400">Your Institution</p>
           </div>
         </div>
       </aside>

@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "TEMPO",
-  description: "Survey automation, EMA scheduling, and tracking dashboard for the study",
+  description: "Scheduled participant outreach and completion tracking",
 };
 
 export default function RootLayout({

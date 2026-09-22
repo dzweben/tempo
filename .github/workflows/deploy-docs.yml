@@ -1,15 +1,12 @@
-name: Deploy documentation
+name: Deploy site
 
-# Builds the Docusaurus site in website/ and publishes it to GitHub Pages.
-# Enable Pages for this repository first: Settings > Pages > Source:
-# "GitHub Actions". The site is then served at the `url` + `baseUrl` set in
-# website/docusaurus.config.ts.
+# Publishes site/ to GitHub Pages. Static files only — no build step.
 
 on:
   push:
     branches: [main]
     paths:
-      - "website/**"
+      - "site/**"
       - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
@@ -23,29 +20,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: website
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: website/build
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4

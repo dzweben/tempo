@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TEMPO — scheduled participant outreach</title>
+<meta name="description" content="TEMPO reads a survey platform's exports, links, dates and completion flags, computes when each participant is owed a message, and sends it by SMS and email. Self-hosted, auditable, provider-agnostic.">
+<link rel="icon" href="img/icon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --teal-900:#06393d; --teal-800:#0a4d52; --teal-700:#0c6169; --teal-500:#159aa6;
+  --teal-300:#7fc9d0; --teal-100:#dceff1; --amber:#c4661f; --amber-soft:#fbeadc;
+  --paper:#fbfbfa; --card:#fff; --ink:#151d1f; --ink-2:#44514f; --muted:#6c7a78; --line:#e3e6e4;
+  --code-bg:#f4f7f6;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --teal-700:#63c6d1; --teal-500:#45b8c5; --teal-300:#2b7f88; --teal-100:#0c2f33;
+  --amber:#e9a05c; --amber-soft:#33241a;
+  --paper:#0d1416; --card:#131c1f; --ink:#eef3f2; --ink-2:#c2ccca; --muted:#8d9b98; --line:#222d30;
+  --code-bg:#111a1c;
+}}
+:root[data-theme="dark"]{
+  --teal-700:#63c6d1; --teal-500:#45b8c5; --teal-300:#2b7f88; --teal-100:#0c2f33;
+  --amber:#e9a05c; --amber-soft:#33241a;
+  --paper:#0d1416; --card:#131c1f; --ink:#eef3f2; --ink-2:#c2ccca; --muted:#8d9b98; --line:#222d30;
+  --code-bg:#111a1c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:16.5px/1.68 "Public Sans",ui-sans-serif,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;padding-inline:20px}
+h1,h2,h3{font-family:"Bricolage Grotesque","Public Sans",sans-serif;letter-spacing:-.03em;line-height:1.1;text-wrap:balance;margin:0}
+a{color:var(--teal-700)}
+code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+.wrap{max-width:900px;margin:0 auto}
+
+/* header */
+.top{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:22px 0 0;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.brand svg{display:block}
+.toplinks{display:flex;gap:18px;font-size:.92rem;font-weight:550}
+.toplinks a{text-decoration:none;color:var(--ink-2)}
+.toplinks a:hover{color:var(--teal-700)}
+
+/* hero */
+.hero{padding:62px 0 54px;border-bottom:1px solid var(--line)}
+.eyebrow{display:inline-flex;align-items:center;gap:.55rem;font-size:.72rem;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:18px}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);
+  animation:pulse 2.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--amber) 55%,transparent)}
+  70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.eyebrow::before{animation:none}}
+h1{font-size:clamp(2.5rem,6vw,3.6rem);font-weight:800;margin-bottom:.4rem}
+.sub{font-size:1.02rem;font-weight:600;color:var(--teal-700);margin-bottom:1.4rem;letter-spacing:-.01em}
+.lede{font-size:1.16rem;line-height:1.6;max-width:41rem;color:var(--ink-2);margin:0 0 1.1rem}
+.lede strong{color:var(--ink);font-weight:650}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:1.8rem}
+.btn{display:inline-block;padding:.7rem 1.2rem;border-radius:8px;font-weight:620;font-size:.95rem;
+  text-decoration:none;transition:transform .12s ease,background .14s ease,border-color .14s ease}
+.btn-p{background:var(--teal-700);color:#fff}
+.btn-p:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn-g{border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btn-g:hover{border-color:var(--teal-700);color:var(--teal-700);transform:translateY(-1px)}
+
+/* sections */
+section{padding:54px 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+h2{font-size:clamp(1.5rem,3.4vw,2rem);font-weight:750;margin-bottom:.55rem}
+.kicker{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--amber);margin-bottom:.55rem}
+.intro{color:var(--ink-2);max-width:42rem;margin:0 0 1.9rem;font-size:1.02rem}
+p{margin:0 0 1rem;max-width:42rem;color:var(--ink-2)}
+p strong{color:var(--ink);font-weight:620}
+h3{font-size:1.05rem;font-weight:700;margin:2rem 0 .6rem;color:var(--ink)}
+
+/* code */
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;font-size:.845rem;line-height:1.62;margin:0 0 1.2rem}
+pre code{color:var(--ink)}
+.c{color:var(--muted)}
+.s{color:var(--amber)}
+.k{color:var(--teal-700);font-weight:500}
+p code,li code{background:var(--code-bg);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .34em;font-size:.86em}
+
+/* flow diagram */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 1.8rem}
+.fstep{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+.fstep b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:.7rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--teal-700);margin-bottom:.35rem}
+.fstep span{font-size:.9rem;color:var(--ink-2);line-height:1.5}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:.92rem;margin:0 0 1.4rem;
+  border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th{text-align:left;font-family:"Bricolage Grotesque",sans-serif;font-size:.7rem;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:9px 13px;
+  border-bottom:2px solid var(--line)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+tr:last-child td{border-bottom:none}
+td code{font-size:.84em}
+.tw{overflow-x:auto}
+
+/* screenshots */
+figure{margin:0 0 1.5rem}
+figure img{width:100%;display:block;border:1px solid var(--line);border-radius:11px;
+  box-shadow:0 18px 44px -30px rgba(6,57,61,.55)}
+figcaption{font-size:.87rem;color:var(--muted);margin-top:.55rem}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:1.3rem}
+
+/* footer */
+footer{padding:40px 0 70px;color:var(--muted);font-size:.9rem}
+footer a{color:var(--teal-700)}
+.cite{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--teal-700);
+  border-radius:8px;padding:13px 16px;font-size:.87rem;margin:0 0 1.3rem;max-width:42rem;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true">
+      <rect width="28" height="28" rx="7" fill="#0c6169"/>
+      <path d="M6 18.5 L9.5 18.5 L11.5 9.5 L14 21 L16.5 13 L18.5 18.5 L22 18.5" stroke="#7fc9d0"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    TEMPO
+  </div>
+  <div class="toplinks">
+    <a href="#how">How it works</a>
+    <a href="#code">Sample code</a>
+    <a href="#server">The server</a>
+    <a href="https://github.com/dzweben/tempo">GitHub</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Research software</div>
+  <h1>TEMPO</h1>
+  <div class="sub">Tracking, Engagement, Messaging &amp; Participant Outreach</div>
+  <p class="lede">
+    A survey platform already holds everything an outreach protocol needs: the roster,
+    a personal survey link per participant, the date fields a schedule hangs off, and a
+    completion flag on every form. Messaging APIs sit on the other side.
+    <strong>TEMPO is the part in between</strong> — it reads the first, computes who is owed
+    what and when, sends by SMS and email at that moment, and writes down what it did.
+  </p>
+  <p class="lede">
+    The result runs itself. Nobody has to remember to send anything, and every message
+    is accounted for afterwards.
+  </p>
+  <div class="actions">
+    <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
+    <a class="btn btn-g" href="#server">See the server</a>
+  </div>
+</header>
+
+<section id="how">
+  <div class="kicker">How it works</div>
+  <h2>Dates in, messages out</h2>
+  <p class="intro">
+    Every automated message is declared once. A pipeline expands those declarations against
+    the current export into a queue of dated rows; senders drain the queue on a clock.
+  </p>
+
+  <div class="flow">
+    <div class="fstep"><b>1 · Pull</b><span>Export records, date fields and completion flags. Resolve each participant's personal survey link.</span></div>
+    <div class="fstep"><b>2 · Compute</b><span>Turn each declaration into an exact timestamp: a date field plus an offset, gated on a completion flag.</span></div>
+    <div class="fstep"><b>3 · Send</b><span>Transmit what is due over SMS and email, with the participant's own link substituted in.</span></div>
+    <div class="fstep"><b>4 · Record</b><span>Append to a ledger, so the same message can never go twice and every send is auditable.</span></div>
+  </div>
+
+  <p>
+    Nothing about this is tied to one vendor. The reference build speaks REDCap, OpenPhone and
+    Gmail SMTP, but the contract is small enough that Qualtrics, Twilio, SES or anything similar
+    slots in by reimplementing a handful of calls.
+  </p>
+
+  <div class="tw">
+  <table>
+    <tr><th>Integration point</th><th>What TEMPO needs from it</th></tr>
+    <tr><td><strong>Survey platform</strong></td><td>A record export, date fields, per-form completion flags, and a per-participant survey link</td></tr>
+    <tr><td><strong>SMS provider</strong></td><td>A send endpoint. Optionally a message-history endpoint, used to arbitrate against duplicates</td></tr>
+    <tr><td><strong>Email</strong></td><td>SMTP credentials, or any HTTP send API</td></tr>
+    <tr><td><strong>Scheduler</strong></td><td>Anything that can invoke a URL on a schedule</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="code">
+  <div class="kicker">Sample code</div>
+  <h2>What it looks like in practice</h2>
+  <p class="intro">
+    Field names below are illustrative — in a deployment they are your own event and
+    instrument names.
+  </p>
+
+  <h3>Declaring a message</h3>
+  <p>One entry: when it is owed, when it fires, where it goes, and what it says.</p>
+<pre><code>{
+  instrument: <span class="s">"Follow-up reminder"</span>,
+
+  <span class="c">// Owed only while the form is still incomplete.</span>
+  condition: <span class="s">"[followup_arm_1][followup_1_complete]&lt;&gt;2"</span>,
+
+  <span class="c">// 14 days after the baseline date, then every 7 days, at most 3 times.</span>
+  sendDateSpec: <span class="s">"14 days after [baseline_arm_1][baseline_date] "</span> +
+                <span class="s">"repeat every 7 days up to 3 times"</span>,
+
+  <span class="c">// A phone field implies SMS, an email field implies email.</span>
+  destinationSpec: <span class="s">"[baseline_arm_1][participant_phone]\t[baseline_arm_1][participant_email]"</span>,
+
+  <span class="c">// [event][field] fills per participant; [survey-link:form] becomes
+  // that participant's own URL, resolved at send time.</span>
+  message: <span class="s">"Hi [baseline_arm_1][first_name], your follow-up is open: "</span> +
+           <span class="s">"[followup_arm_1][survey-link:followup_1]"</span>,
+}</code></pre>
+
+  <h3>Computing the send time</h3>
+  <p>
+    The spec is resolved per participant against their own dates. A repeat stops the moment
+    the completion flag flips, so whoever responds stops being chased.
+  </p>
+<pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
+<span class="k">const</span> { offsetDays, everyDays, maxTimes } = parseSpec(alert.sendDateSpec);
+
+<span class="k">const</span> sends = [];
+<span class="k">for</span> (<span class="k">let</span> n = <span class="s">0</span>; n &lt; maxTimes; n++) {
+  <span class="k">if</span> (isComplete(participant, alert.condition)) <span class="k">break</span>;   <span class="c">// responded — stop</span>
+  sends.push(atStudyTime(addDays(anchor, offsetDays + n * everyDays), <span class="s">"17:00"</span>));
+}
+<span class="c">// → 2026-03-18T17:00, 2026-03-25T17:00, 2026-04-01T17:00</span></code></pre>
+
+  <h3>Sending a text</h3>
+<pre><code><span class="k">await</span> fetch(<span class="s">"https://api.openphone.com/v1/messages"</span>, {
+  method: <span class="s">"POST"</span>,
+  headers: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span>, Authorization: API_KEY },
+  body: JSON.stringify({ content: body, from: FROM_NUMBER, to: [e164] }),
+  signal: AbortSignal.timeout(<span class="s">30_000</span>),
+});</code></pre>
+
+  <h3>Sending an email</h3>
+<pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
+  host: <span class="s">"smtp.gmail.com"</span>, port: <span class="s">587</span>, secure: <span class="k">false</span>,
+  pool: <span class="k">true</span>, auth: { user: SMTP_USER, pass: SMTP_PASS },
+});
+
+<span class="k">await</span> mailer.sendMail({ from, to: recipient, subject, text: body });</code></pre>
+
+  <h3>Not sending it twice</h3>
+  <p>
+    Delivery is the one step that cannot be undone, so at-most-once is enforced three
+    independent ways — each catches what the others miss.
+  </p>
+  <div class="tw">
+  <table>
+    <tr><th>Mechanism</th><th>What it catches</th></tr>
+    <tr><td><strong>Append-only ledger</strong><br><code>pid|alert|time|channel|recipient</code></td><td>The ordinary case: a rerun, a retry, an overlapping schedule</td></tr>
+    <tr><td><strong>Claim before transmit</strong></td><td>Two invocations racing the same moment — only one wins the claim</td></tr>
+    <tr><td><strong>Provider history check</strong></td><td>A send that happened but whose ledger write was lost</td></tr>
+  </table>
+  </div>
+  <p>
+    Around those sit the ordinary guards: quiet hours, an opt-out list checked twice, a
+    per-run cap, a refusal to send any message whose survey link did not resolve, dry-run by
+    default, and a runtime kill switch that takes effect without a redeploy. Timed prompts
+    wait inside the invocation and fire on the second rather than trusting a scheduler's
+    punctuality; one that cannot make its window is recorded as a skip instead of arriving late.
+  </p>
+</section>
+
+<section id="server">
+  <div class="kicker">The server</div>
+  <h2>A dashboard over the whole thing</h2>
+  <p class="intro">
+    The same files the senders write are what the dashboard reads — no second database, no
+    reporting layer to keep in sync. Screens below run on synthetic data.
+  </p>
+
+  <figure>
+    <img src="img/dash-overview.png" alt="Overview screen showing participant totals, messages due in the next seven days, and a per-wave completion table" loading="lazy">
+    <figcaption>Where the study stands: totals, what is due, and completion broken out by phase.</figcaption>
+  </figure>
+
+  <div class="shots">
+    <figure>
+      <img src="img/dash-queue.png" alt="Outgoing queue grouped by day, listing scheduled messages per participant" loading="lazy">
+      <figcaption>What is going out, grouped by day, before it goes out.</figcaption>
+    </figure>
+    <figure>
+      <img src="img/dash-sent.png" alt="Sent log listing each delivered message with channel, recipient and status" loading="lazy">
+      <figcaption>What already went out — message, channel, recipient, status.</figcaption>
+    </figure>
+  </div>
+
+  <figure>
+    <img src="img/dash-participants.png" alt="Participant roster with per-participant status" loading="lazy">
+    <figcaption>The roster, with each participant's progress through the protocol.</figcaption>
+  </figure>
+
+  <p>
+    Access is a single shared password behind a signed cookie, checked in middleware on every
+    route. A daily reconciliation compares what was planned against what the ledger recorded,
+    so a message that quietly failed surfaces the next morning rather than at the end of the study.
+  </p>
+</section>
+
+<footer class="wrap">
+  <div class="cite">
+    <strong>Citing TEMPO.</strong> Zweben, D. (2026). <em>TEMPO: Tracking, Engagement, Messaging
+    &amp; Participant Outreach</em> [Computer software]. Zenodo.
+  </div>
+  <p style="max-width:42rem">
+    MIT licensed · <a href="https://github.com/dzweben/tempo">github.com/dzweben/tempo</a>
+  </p>
+</footer>
+
+</div>
+</body>
+</html>
