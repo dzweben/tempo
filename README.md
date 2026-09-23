@@ -1,4 +1,4 @@
-<img src="site/img/logo.png" alt="tempo" width="260">
+<img src="site/img/logo.svg" alt="tempo" width="300">
 
 **Tracking, Engagement, Messaging & Participant Outreach**
 
