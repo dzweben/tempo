@@ -4,6 +4,8 @@
 
 **[dzweben.github.io/tempo](https://dzweben.github.io/tempo/)**
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22925367.svg)](https://doi.org/10.5281/zenodo.22925367)
+
 A self-hosted server for any research study that sends scheduled surveys and
 reminders. If your participants have dates attached to them — an enrollment
 date, a visit date, a cycle start — and things need to go out relative to those
@@ -172,4 +174,9 @@ See [LICENSE](LICENSE).
 
 ## Citation
 
-See [CITATION.cff](CITATION.cff), or use the DOI on the release you are citing.
+Zweben, D. (2026). *TEMPO: Tracking, Engagement, Messaging & Participant Outreach*
+[Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22925367
+
+That DOI always resolves to the newest version. To cite the exact release you
+ran, use the version DOI instead — v1.0.0 is
+[10.5281/zenodo.22925408](https://doi.org/10.5281/zenodo.22925408).

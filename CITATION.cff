@@ -7,6 +7,7 @@ authors:
     given-names: Danny
     affiliation: Temple University
 repository-code: "https://github.com/dzweben/tempo"
+url: "https://dzweben.github.io/tempo/"
 abstract: >-
   A self-hosted server for research studies that send scheduled surveys and
   reminders. TEMPO integrates a survey database of record with SMS and email
@@ -26,5 +27,6 @@ keywords:
   - survey automation
   - clinical research informatics
 license: MIT
+doi: 10.5281/zenodo.22925367
 version: 1.0.0
 date-released: 2026-09-22

@@ -29,6 +29,11 @@
       "identifier": "https://github.com/dzweben/tempo",
       "relation": "isSupplementTo",
       "scheme": "url"
+    },
+    {
+      "identifier": "https://dzweben.github.io/tempo/",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
     }
   ]
 }
