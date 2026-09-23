@@ -11,10 +11,10 @@ import type { WaveYear } from "@/types";
 const KIND_LABEL: Record<AlertKind, string> = {
   athome_sms: "At-home (SMS)",
   athome_email: "At-home (email)",
-  sts1_invite: "STS1 invite",
-  sts1_followup: "STS1 follow-up",
-  sts2_invite: "STS2 invite",
-  sts2_followup: "STS2 follow-up",
+  sts1_invite: "cycle 1 invite",
+  sts1_followup: "cycle 1 follow-up",
+  sts2_invite: "cycle 2 invite",
+  sts2_followup: "cycle 2 follow-up",
   ema_enable: "EMA enable",
   ema_prompt: "EMA prompt",
   payment_email: "Payment",
@@ -44,12 +44,12 @@ const KIND_COLOR: Record<AlertKind, string> = {
 const SEND_CAVEAT: Record<AlertKind, string> = {
   athome_sms: "Only sends while the at-home survey is NOT complete (athome_measures_complete ≠ 2).",
   athome_email: "Only sends while the at-home survey is NOT complete (athome_measures_complete ≠ 2).",
-  sts1_invite: "Only sends while that STS1 cycle is NOT complete (screen_time_N_complete ≠ 2).",
-  sts1_followup: "Only sends while that STS1 cycle is NOT complete (screen_time_N_complete ≠ 2). Stops the moment the survey is done.",
-  sts2_invite: "Only sends while that STS2 cycle is NOT complete (screen_time_N_2_complete ≠ 2).",
-  sts2_followup: "Only sends while that STS2 cycle is NOT complete (screen_time_N_2_complete ≠ 2). Stops the moment the survey is done.",
+  sts1_invite: "Only sends while that cycle 1 cycle is NOT complete (the cycle form is not complete).",
+  sts1_followup: "Only sends while that cycle 1 cycle is NOT complete (the cycle form is not complete). Stops the moment the survey is done.",
+  sts2_invite: "Only sends while that cycle 2 cycle is NOT complete (the cycle form is not complete).",
+  sts2_followup: "Only sends while that cycle 2 cycle is NOT complete (the cycle form is not complete). Stops the moment the survey is done.",
   ema_enable: "Only sends until the participant enables the cycle (tempo_server_ema_enable is set). Suppressed once enabled.",
-  ema_prompt: "Only sends while the cycle is active AND this prompt is unanswered (ema_report_N_complete ≠ 2).",
+  ema_prompt: "Only sends while the cycle is active AND this prompt is unanswered (the prompt form is not complete).",
   payment_email: "Only sends while the payment is NOT redeemed (ema_payment_redeem_yn ≠ 1).",
   payment_followup: "Only sends while the payment is NOT redeemed (ema_payment_redeem_yn ≠ 1). The whole follow-up series stops on redemption.",
   payment_expire: "Only sends if the link expired WITHOUT redemption (ema_payment_redeem_yn ≠ 1).",
@@ -78,7 +78,7 @@ function effectiveTrigger(a: TimelineAlert): string {
   }
   if (a.trigger) return a.trigger;
   if (a.kind.startsWith("payment")) {
-    return "Scheduled datetime send (no event trigger) — computed from the STS2.3 date + the payment timeline.";
+    return "Scheduled datetime send (no event trigger) — computed from the cycle 2.3 date + the payment timeline.";
   }
   return "Scheduled datetime send (no event trigger).";
 }
@@ -111,7 +111,7 @@ export default function AlertsPage() {
           <p className="text-sm text-gray-500 mt-1">
             Every automated message the study sends, with its trigger, conditional logic, send-date
             rule, and message copy. Click a row to expand. Placeholders like{" "}
-            <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">[preenrollment_arm_1][first_name]</code>{" "}
+            <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">[enrollment_arm_1][first_name]</code>{" "}
             and <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">[expire_date]</code> fill in at send time.
           </p>
         </div>

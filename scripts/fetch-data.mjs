@@ -40,7 +40,7 @@ const WAVES = [1, 2, 3];
 // Canonical event names per the Timeline workbook + REDCap metadata.
 function eventName(kind, wave) {
   switch (kind) {
-    case "pre":     return "preenrollment_arm_1";
+    case "pre":     return "enrollment_arm_1";
     case "enroll":  return "enrollment_arm_1";
     case "v1":      return `visit_1_y${wave}_arm_1`;
     case "athome":  return `athome_measures_y${wave}_arm_1`;
@@ -365,12 +365,12 @@ function pivotParticipant(recordRows) {
   for (const r of recordRows) byEvent[r.redcap_event_name || ""] = r;
 
   // ONLY count someone as a participant once they have an enrollment row —
-  // preenrollment alone is just a signup form, ~3x more rows than real
+  // enrollment alone is just a signup form, ~3x more rows than real
   // enrollees, and is what was polluting the dashboard's contact display.
   const enroll = byEvent[eventName("enroll")];
   if (!enroll) return null;
 
-  // Pull contact info from enrollment, falling back to preenrollment.
+  // Pull contact info from enrollment, falling back to enrollment.
   const pre = byEvent[eventName("pre")] || {};
   const pick = (field) => enroll[field] || pre[field] || "";
   const contact = {
@@ -385,7 +385,7 @@ function pivotParticipant(recordRows) {
     // 1000-1999 -> "Y2 cohort", 2000+ -> "Y3 cohort" per the session-notes
     // workbook convention. Keep the raw record_id range as the label.
     cohortGroup: pick("cohort_group") || pick("tppid") || "",
-    // DOB from REDCap preenrollment (already in the bulk fetch — no extra
+    // DOB from REDCap enrollment (already in the bulk fetch — no extra
     // API call). Age computed from DOB.
     // Age gates: <13 doesn't get the EMA survey; STS2 still scheduled
     // using a hypothetical EMA anchor. Also drives payment variant

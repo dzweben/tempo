@@ -106,12 +106,12 @@ function renderMessage(template, participant, surveyLinks, expireDate) {
   let out = template;
   const c = participant.contact || {};
   const subs = {
-    "[preenrollment_arm_1][first_name]": c.firstName || "",
-    "[preenrollment_arm_1][last_name]": c.lastName || "",
-    "[preenrollment_arm_1][parent_name]": c.parentName || "",
-    "[preenrollment_arm_1][email]": c.email || "",
-    "[preenrollment_arm_1][phone_primary]": c.phonePrimary || "",
-    "[preenrollment_arm_1][phone_secondary]": c.phoneSecondary || "",
+    "[enrollment_arm_1][first_name]": c.firstName || "",
+    "[enrollment_arm_1][last_name]": c.lastName || "",
+    "[enrollment_arm_1][parent_name]": c.parentName || "",
+    "[enrollment_arm_1][email]": c.email || "",
+    "[enrollment_arm_1][phone_primary]": c.phonePrimary || "",
+    "[enrollment_arm_1][phone_secondary]": c.phoneSecondary || "",
     "[name]": c.firstName || "",
     "[expire_date]": fmtExpireDate(expireDate),
   };
@@ -417,12 +417,12 @@ async function main() {
         e.kind === "ema_enable" && e.status === "sent" && !e.dryRun &&
         e.pid === d.pid && String(e.instrument || "").includes(`Y${d.wave}`)
       ).map(e => String(e.timestamp).slice(0, 10)));
-      const FIRST_LINE = "Hi [preenrollment_arm_1][first_name]! This is the the study Team.";
+      const FIRST_LINE = "Hi [enrollment_arm_1][first_name]! This is the the study Team.";
       const OPENERS = [
         null, // attempt 1: template as written
-        "Hi [preenrollment_arm_1][first_name]! It's the the study Team again — just a reminder in case you missed our last text.",
-        "Hi [preenrollment_arm_1][first_name]! It's the the study Team — we haven't heard from you yet, so here's one more reminder.",
-        "Hi [preenrollment_arm_1][first_name]! It's the the study Team with one more reminder about our social check.",
+        "Hi [enrollment_arm_1][first_name]! It's the the study Team again — just a reminder in case you missed our last text.",
+        "Hi [enrollment_arm_1][first_name]! It's the the study Team — we haven't heard from you yet, so here's one more reminder.",
+        "Hi [enrollment_arm_1][first_name]! It's the the study Team with one more reminder about our social check.",
       ];
       const opener = OPENERS[Math.min(priorDates.size, 3)];
       if (opener && msgTemplate.startsWith(FIRST_LINE)) msgTemplate = opener + msgTemplate.slice(FIRST_LINE.length);

@@ -135,14 +135,14 @@ const RAW: Omit<TimelineAlert, "channels">[] = [
     kind: "ema_enable",
     instrument: "EMA Settings",
     trigger: null,
-    condition: "[ema_y1_arm_1][ema_enabled]=''",
+    condition: "[checkin_arm_1][checkin_enabled]=''",
     // Fires a few days before the cycle's start day so the participant can
     // opt in and pick a contact number first.
-    sendDateSpec: "3 days 8 hours before [ema_y1_arm_1][ema_start_day]",
+    sendDateSpec: "3 days 8 hours before [checkin_arm_1][checkin_start_day]",
     destinationSpec: CONTACTS,
     emaKey: null,
     message:
-      "Hi [enrollment_arm_1][first_name], your Example Study check-in period starts soon. Tap here to confirm the number we should text: [ema_y1_arm_1][survey-link:ema_settings]",
+      "Hi [enrollment_arm_1][first_name], your Example Study check-in period starts soon. Tap here to confirm the number we should text: [checkin_arm_1][survey-link:checkin_settings]",
   },
   {
     alertId: 6,
@@ -150,14 +150,14 @@ const RAW: Omit<TimelineAlert, "channels">[] = [
     kind: "ema_prompt",
     instrument: "Check-in 1",
     trigger: null,
-    condition: "[ema_y1_arm_1][ema_report_1_complete]<>2",
-    sendDateSpec: "[ema_y1_arm_1][ema_start_day]",
-    destinationSpec: "[ema_y1_arm_1][ema_phone]",
+    condition: "[checkin_arm_1][checkin_1_complete]<>2",
+    sendDateSpec: "[checkin_arm_1][checkin_start_day]",
+    destinationSpec: "[checkin_arm_1][prompt_phone]",
     // Slot key: weekday + clock time within the prompt grid. A real study
     // defines one entry per slot (commonly 20-30 across a cycle).
     emaKey: "ema_mon_1000",
     message:
-      "Hi [enrollment_arm_1][first_name]! Time for a quick check-in — it takes about a minute: [ema_y1_arm_1][survey-link:ema_report_1]",
+      "Hi [enrollment_arm_1][first_name]! Time for a quick check-in — it takes about a minute: [checkin_arm_1][survey-link:checkin_1]",
   },
   {
     alertId: 7,
@@ -165,12 +165,12 @@ const RAW: Omit<TimelineAlert, "channels">[] = [
     kind: "ema_prompt",
     instrument: "Check-in 2",
     trigger: null,
-    condition: "[ema_y1_arm_1][ema_report_2_complete]<>2",
-    sendDateSpec: "[ema_y1_arm_1][ema_start_day]",
-    destinationSpec: "[ema_y1_arm_1][ema_phone]",
+    condition: "[checkin_arm_1][checkin_2_complete]<>2",
+    sendDateSpec: "[checkin_arm_1][checkin_start_day]",
+    destinationSpec: "[checkin_arm_1][prompt_phone]",
     emaKey: "ema_mon_1600",
     message:
-      "Hi [enrollment_arm_1][first_name]! Time for a quick check-in — it takes about a minute: [ema_y1_arm_1][survey-link:ema_report_2]",
+      "Hi [enrollment_arm_1][first_name]! Time for a quick check-in — it takes about a minute: [checkin_arm_1][survey-link:checkin_2]",
   },
 
   // --- Compensation: notice, follow-up, expiry ------------------------

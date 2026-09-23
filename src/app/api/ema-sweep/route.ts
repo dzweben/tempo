@@ -114,7 +114,7 @@ async function promptTemplate(): Promise<string | null> {
 }
 
 function renderPrompt(tmpl: string, firstName: string, link: string): string {
-  let out = tmpl.split("[preenrollment_arm_1][first_name]").join(firstName || "");
+  let out = tmpl.split("[enrollment_arm_1][first_name]").join(firstName || "");
   out = out.replace(/\[[a-z0-9_]+\]\[survey-link:[a-z0-9_]+\]/gi, link);
   return out;
 }

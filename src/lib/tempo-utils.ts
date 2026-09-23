@@ -186,12 +186,12 @@ export function renderMessageTemplate(
   let out = template;
   if (participant) {
     const subs: Record<string, string> = {
-      "[preenrollment_arm_1][first_name]": participant.contact.firstName || "",
-      "[preenrollment_arm_1][last_name]": participant.contact.lastName || "",
-      "[preenrollment_arm_1][parent_name]": participant.contact.parentName || "",
-      "[preenrollment_arm_1][email]": participant.contact.email || "",
-      "[preenrollment_arm_1][phone_primary]": participant.contact.phonePrimary || "",
-      "[preenrollment_arm_1][phone_secondary]": participant.contact.phoneSecondary || "",
+      "[enrollment_arm_1][first_name]": participant.contact.firstName || "",
+      "[enrollment_arm_1][last_name]": participant.contact.lastName || "",
+      "[enrollment_arm_1][parent_name]": participant.contact.parentName || "",
+      "[enrollment_arm_1][email]": participant.contact.email || "",
+      "[enrollment_arm_1][phone_primary]": participant.contact.phonePrimary || "",
+      "[enrollment_arm_1][phone_secondary]": participant.contact.phoneSecondary || "",
       // Friendly aliases used in the payment message copy.
       "[name]": participant.contact.firstName || "",
     };

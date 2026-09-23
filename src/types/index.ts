@@ -1,14 +1,11 @@
-// the study data model.
+// Data model.
 //
-// REDCap structure (from the Timeline of Automated Messages workbook):
+// One object per participant, assembled from the survey platform export.
+// The event and field names a deployment reads are bound in
+// scripts/fetch-data.mjs; everything below is the shape that binding
+// produces. Wave/cycle/prompt structures are the reference protocol's
+// shape — adjust them to your own.
 //
-//   preenrollment_arm_1          → demographics + contact info (constant per participant)
-//   visit_1_y{N}_arm_1           → V1 in-lab visit (per wave N=1..3)
-//   athome_measures_y{N}_arm_1   → 8-section at-home survey (per wave)
-//   screen_time_y{N}_arm_1       → STS1 cycle, 6 sub-surveys (per wave)
-//   screen_time_2_y{N}_arm_1     → STS2 cycle, 3 sub-surveys (per wave)
-//   ema_y{N}_arm_1               → EMA cycle with ~20 timed micro-surveys (per wave)
-//   visit_2_y{N}_arm_1           → V2 in-lab visit (per wave)
 
 export type WaveYear = 1 | 2 | 3;
 export type Channel = "sms" | "email";
@@ -40,7 +37,7 @@ export interface AtHomeStatus {
   break1Complete: CompletionCode; // gates the at-home send
   athomeMeasuresComplete: CompletionCode;
   // Every <something>_complete code surfaced from the per-wave at-home
-  // REDCap report (e.g. 10824 for Y1). Lets the dashboard show generic
+  // REDCap report (per wave). Lets the dashboard show generic
   // section-by-section completion without hard-coding instrument names.
   formsFromReport?: Record<string, CompletionCode>;
   // Headline counts derived from formsFromReport for quick rendering.
@@ -56,12 +53,11 @@ export interface STSCycle {
 }
 
 export interface STSStatus {
-  active: boolean;                // screen_time_cycle_{1|2} == "1"
-  cycles: STSCycle[];             // STS1: 6 entries, STS2: 3 entries
+  active: boolean;                  cycles: STSCycle[];             // STS1: 6 entries, STS2: 3 entries
 }
 
 export interface EMAPrompt {
-  key: string;                    // e.g. "ema_m1_734" (Monday week-1 7:34 AM)
+  key: string;                    // slot key, e.g. "mon_0734"
   dayLabel: string;               // "Monday 1", "Tuesday 1", …
   timeLabel: string;              // "7:34 AM", …
   scheduledAt: string | null;     // ISO datetime from REDCap (or null if not yet computed)
