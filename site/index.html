@@ -58,6 +58,7 @@ code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
 @media (prefers-reduced-motion:reduce){.eyebrow::before{animation:none}}
 h1{margin:0 0 1rem;line-height:0}
 h1 img{width:clamp(230px,30vw,300px);height:auto;display:block}
+h1 picture{display:block}
 .sub{font-size:1.02rem;font-weight:600;color:var(--teal-700);margin-bottom:1.4rem;letter-spacing:-.01em}
 .lede{font-size:1.16rem;line-height:1.6;max-width:41rem;color:var(--ink-2);margin:0 0 1.1rem}
 .lede strong{color:var(--ink);font-weight:650}
@@ -142,7 +143,12 @@ footer a{color:var(--teal-700)}
 
 <header class="hero">
   <div class="eyebrow">Research software</div>
-  <h1><img src="img/logo.png" alt="tempo" width="943" height="676"></h1>
+  <h1>
+    <picture>
+      <source srcset="img/logo-dark.png" media="(prefers-color-scheme: dark)">
+      <img src="img/logo.png" alt="tempo" width="944" height="688">
+    </picture>
+  </h1>
   <div class="sub">Tracking, Engagement, Messaging &amp; Participant Outreach</div>
   <p class="lede">
     A survey platform holds the roster, a survey link per participant, date fields, and a
