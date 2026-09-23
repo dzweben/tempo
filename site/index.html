@@ -9,22 +9,24 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 :root{
-  --teal-900:#06393d; --teal-800:#0a4d52; --teal-700:#0c6169; --teal-500:#159aa6;
-  --teal-300:#7fc9d0; --teal-100:#dceff1; --amber:#c4661f; --amber-soft:#fbeadc;
-  --paper:#fbfbfa; --card:#fff; --ink:#151d1f; --ink-2:#44514f; --muted:#6c7a78; --line:#e3e6e4;
-  --code-bg:#f4f7f6;
+  --violet:#6b21d6; --violet-deep:#4e0cb9; --navy:#221252;
+  --coral:#ed797c; --cyan:#5ec7e8;
+  --teal-700:#6b21d6; --teal-500:#8b4ae2; --teal-300:#c4a4f0; --teal-100:#ede5fb;
+  --amber:#d2615f;
+  --paper:#faf9f6; --card:#fff; --ink:#1a1630; --ink-2:#4a4560; --muted:#7a7590; --line:#e6e3ee;
+  --code-bg:#f5f3fa;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --teal-700:#63c6d1; --teal-500:#45b8c5; --teal-300:#2b7f88; --teal-100:#0c2f33;
-  --amber:#e9a05c; --amber-soft:#33241a;
-  --paper:#0d1416; --card:#131c1f; --ink:#eef3f2; --ink-2:#c2ccca; --muted:#8d9b98; --line:#222d30;
-  --code-bg:#111a1c;
+  --violet:#7c3aed; --teal-700:#b98cf5; --teal-500:#a274ee; --teal-300:#6d4aa8; --teal-100:#241a3d;
+  --amber:#f0908f; --coral:#ed797c; --cyan:#5ec7e8;
+  --paper:#0f0d18; --card:#181425; --ink:#f0edf7; --ink-2:#c8c2d8; --muted:#8e88a3; --line:#282238;
+  --code-bg:#14101f;
 }}
 :root[data-theme="dark"]{
-  --teal-700:#63c6d1; --teal-500:#45b8c5; --teal-300:#2b7f88; --teal-100:#0c2f33;
-  --amber:#e9a05c; --amber-soft:#33241a;
-  --paper:#0d1416; --card:#131c1f; --ink:#eef3f2; --ink-2:#c2ccca; --muted:#8d9b98; --line:#222d30;
-  --code-bg:#111a1c;
+  --violet:#7c3aed; --teal-700:#b98cf5; --teal-500:#a274ee; --teal-300:#6d4aa8; --teal-100:#241a3d;
+  --amber:#f0908f; --coral:#ed797c; --cyan:#5ec7e8;
+  --paper:#0f0d18; --card:#181425; --ink:#f0edf7; --ink-2:#c8c2d8; --muted:#8e88a3; --line:#282238;
+  --code-bg:#14101f;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);
@@ -38,8 +40,9 @@ code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
 /* header */
 .top{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
   padding:22px 0 0;gap:16px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
-.brand svg{display:block}
+.brand{display:flex;align-items:center;gap:9px;font-family:"Bricolage Grotesque",sans-serif;
+  font-weight:800;font-size:1.15rem;letter-spacing:-.04em;color:var(--ink);text-decoration:none}
+.brand img{display:block;color:var(--ink)}
 .toplinks{display:flex;gap:18px;font-size:.92rem;font-weight:550}
 .toplinks a{text-decoration:none;color:var(--ink-2)}
 .toplinks a:hover{color:var(--teal-700)}
@@ -53,14 +56,15 @@ code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--amber) 55%,transparent)}
   70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @media (prefers-reduced-motion:reduce){.eyebrow::before{animation:none}}
-h1{font-size:clamp(2.5rem,6vw,3.6rem);font-weight:800;margin-bottom:.4rem}
+h1{margin:0 0 1rem;line-height:0}
+h1 img{width:clamp(230px,30vw,300px);height:auto;display:block}
 .sub{font-size:1.02rem;font-weight:600;color:var(--teal-700);margin-bottom:1.4rem;letter-spacing:-.01em}
 .lede{font-size:1.16rem;line-height:1.6;max-width:41rem;color:var(--ink-2);margin:0 0 1.1rem}
 .lede strong{color:var(--ink);font-weight:650}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:1.8rem}
 .btn{display:inline-block;padding:.7rem 1.2rem;border-radius:8px;font-weight:620;font-size:.95rem;
   text-decoration:none;transition:transform .12s ease,background .14s ease,border-color .14s ease}
-.btn-p{background:var(--teal-700);color:#fff}
+.btn-p{background:var(--violet);color:#fff}
 .btn-p:hover{transform:translateY(-1px);filter:brightness(1.08)}
 .btn-g{border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .btn-g:hover{border-color:var(--teal-700);color:var(--teal-700);transform:translateY(-1px)}
@@ -107,7 +111,7 @@ td code{font-size:.84em}
 /* screenshots */
 figure{margin:0 0 1.5rem}
 figure img{width:100%;display:block;border:1px solid var(--line);border-radius:11px;
-  box-shadow:0 18px 44px -30px rgba(6,57,61,.55)}
+  box-shadow:0 18px 44px -30px rgba(34,18,82,.5)}
 figcaption{font-size:.87rem;color:var(--muted);margin-top:.55rem}
 .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:1.3rem}
 
@@ -121,14 +125,10 @@ footer a{color:var(--teal-700)}
 <body>
 
 <div class="top">
-  <div class="brand">
-    <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true">
-      <rect width="28" height="28" rx="7" fill="#0c6169"/>
-      <path d="M6 18.5 L9.5 18.5 L11.5 9.5 L14 21 L16.5 13 L18.5 18.5 L22 18.5" stroke="#7fc9d0"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    </svg>
-    TEMPO
-  </div>
+  <a class="brand" href="#top">
+    <img src="img/mark.svg" alt="" width="70" height="32">
+    tempo
+  </a>
   <div class="toplinks">
     <a href="#how">How it works</a>
     <a href="#code">Sample code</a>
@@ -142,7 +142,7 @@ footer a{color:var(--teal-700)}
 
 <header class="hero">
   <div class="eyebrow">Research software</div>
-  <h1>TEMPO</h1>
+  <h1><img src="img/logo.png" alt="tempo" width="943" height="676"></h1>
   <div class="sub">Tracking, Engagement, Messaging &amp; Participant Outreach</div>
   <p class="lede">
     A survey platform holds the roster, a survey link per participant, date fields, and a
