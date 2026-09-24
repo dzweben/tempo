@@ -174,8 +174,9 @@ See [LICENSE](LICENSE).
 
 ## Citation
 
-Zweben, D. (2026). *TEMPO: Tracking, Engagement, Messaging & Participant Outreach*
-[Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22925367
+Zweben, D. (2026). *TEMPO: Tracking, Engagement, Messaging & Participant Outreach —
+automated survey scheduling, participant messaging, and completion tracking for
+longitudinal research studies* [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22925367
 
 That DOI always resolves to the newest version. To cite the exact release you
 ran, use the version DOI instead — v1.0.0 is
