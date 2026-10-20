@@ -3,284 +3,366 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>TEMPO — scheduled participant outreach</title>
+<title>TEMPO — scheduled participant outreach for longitudinal studies</title>
 <meta name="description" content="TEMPO reads a survey platform's exports, links, dates and completion flags, computes when each participant is owed a message, and sends it by SMS and email. Self-hosted, auditable, provider-agnostic.">
 <link rel="icon" href="img/icon.svg">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-:root{
-  --violet:#6b21d6; --violet-deep:#4e0cb9; --navy:#221252;
-  --coral:#ed797c; --cyan:#5ec7e8;
-  --teal-700:#6b21d6; --teal-500:#8b4ae2; --teal-300:#c4a4f0; --teal-100:#ede5fb;
-  --amber:#d2615f;
-  --paper:#faf9f6; --card:#fff; --ink:#1a1630; --ink-2:#4a4560; --muted:#7a7590; --line:#e6e3ee;
-  --code-bg:#f5f3fa;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --violet:#7c3aed; --teal-700:#b98cf5; --teal-500:#a274ee; --teal-300:#6d4aa8; --teal-100:#241a3d;
-  --amber:#f0908f; --coral:#ed797c; --cyan:#5ec7e8;
-  --paper:#0f0d18; --card:#181425; --ink:#f0edf7; --ink-2:#c8c2d8; --muted:#8e88a3; --line:#282238;
-  --code-bg:#14101f;
-}}
-:root[data-theme="dark"]{
-  --violet:#7c3aed; --teal-700:#b98cf5; --teal-500:#a274ee; --teal-300:#6d4aa8; --teal-100:#241a3d;
-  --amber:#f0908f; --coral:#ed797c; --cyan:#5ec7e8;
-  --paper:#0f0d18; --card:#181425; --ink:#f0edf7; --ink-2:#c8c2d8; --muted:#8e88a3; --line:#282238;
-  --code-bg:#14101f;
-}
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);
-  font:16.5px/1.68 "Public Sans",ui-sans-serif,system-ui,sans-serif;
-  -webkit-font-smoothing:antialiased;padding-inline:20px}
-h1,h2,h3{font-family:"Bricolage Grotesque","Public Sans",sans-serif;letter-spacing:-.03em;line-height:1.1;text-wrap:balance;margin:0}
-a{color:var(--teal-700)}
-code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
-.wrap{max-width:900px;margin:0 auto}
+:root{
+  --bg:#07060f; --bg2:#0b0917; --surf:#120f22; --surf2:#171330;
+  --line:#241d44; --line2:#352a62;
+  --violet:#8b5cf6; --violet-hot:#a855f7; --coral:#ff6b7a; --cyan:#45d4f7; --navy:#2a1a6e;
+  --ink:#eceafb; --ink2:#b4aed6; --muted:#7d76a3;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --disp:"Space Grotesk","Public Sans",system-ui,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.7 var(--body);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative;
+}
+/* ambient field: dot grid + two colour blooms */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(139,92,246,.17) 1px,transparent 0);
+  background-size:34px 34px;
+  mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,#000 35%,transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,#000 35%,transparent 78%);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(620px 420px at 78% -6%,rgba(139,92,246,.20),transparent 68%),
+    radial-gradient(520px 380px at 6% 14%,rgba(69,212,247,.11),transparent 66%),
+    radial-gradient(460px 340px at 92% 62%,rgba(255,107,122,.09),transparent 66%);
+}
+.wrap,.topbar{position:relative;z-index:1}
+.wrap{max-width:960px;margin:0 auto;padding-inline:22px}
+a{color:var(--cyan)}
+h1,h2,h3{font-family:var(--disp);letter-spacing:-.035em;line-height:1.08;margin:0;text-wrap:balance}
+code,pre{font-family:var(--mono)}
 
-/* header */
-.top{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-  padding:22px 0 0;gap:16px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:9px;font-family:"Bricolage Grotesque",sans-serif;
-  font-weight:800;font-size:1.15rem;letter-spacing:-.04em;color:var(--ink);text-decoration:none}
-.brand img{display:block;color:var(--ink)}
-.toplinks{display:flex;gap:18px;font-size:.92rem;font-weight:550}
-.toplinks a{text-decoration:none;color:var(--ink-2)}
-.toplinks a:hover{color:var(--teal-700)}
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:rgba(7,6,15,.72);border-bottom:1px solid var(--line)}
+.topin{max-width:960px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;
+  justify-content:space-between;gap:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:700;
+  font-size:1.08rem;letter-spacing:-.04em;color:var(--ink);text-decoration:none}
+.brand img{display:block;filter:drop-shadow(0 0 7px rgba(139,92,246,.6))}
+.navlinks{display:flex;gap:17px;font-size:.88rem;font-weight:500}
+.navlinks a{color:var(--ink2);text-decoration:none;transition:color .15s}
+.navlinks a:hover{color:var(--cyan);text-shadow:0 0 14px rgba(69,212,247,.6)}
 
-/* hero */
-.hero{padding:62px 0 54px;border-bottom:1px solid var(--line)}
-.eyebrow{display:inline-flex;align-items:center;gap:.55rem;font-size:.72rem;font-weight:700;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:18px}
-.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);
-  animation:pulse 2.6s ease-out infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--amber) 55%,transparent)}
-  70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
-@media (prefers-reduced-motion:reduce){.eyebrow::before{animation:none}}
-h1{margin:0 0 1rem;line-height:0}
-h1 svg.logo{width:clamp(250px,34vw,330px);height:auto;display:block;color:var(--ink)}
-.sub{font-size:1.02rem;font-weight:600;color:var(--teal-700);margin-bottom:1.4rem;letter-spacing:-.01em}
-.lede{font-size:1.16rem;line-height:1.6;max-width:41rem;color:var(--ink-2);margin:0 0 1.1rem}
-.lede strong{color:var(--ink);font-weight:650}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:1.8rem}
-.btn{display:inline-block;padding:.7rem 1.2rem;border-radius:8px;font-weight:620;font-size:.95rem;
-  text-decoration:none;transition:transform .12s ease,background .14s ease,border-color .14s ease}
-.btn-p{background:var(--violet);color:#fff}
-.btn-p:hover{transform:translateY(-1px);filter:brightness(1.08)}
-.btn-g{border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.btn-g:hover{border-color:var(--teal-700);color:var(--teal-700);transform:translateY(-1px)}
+/* ---------- hero ---------- */
+.hero{padding:74px 0 60px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);
+  gap:46px;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.7rem;
+  font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);
+  border:1px solid var(--line2);border-radius:99px;padding:5px 13px;margin-bottom:22px;
+  background:rgba(69,212,247,.06)}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 10px var(--cyan);animation:beat 2.4s ease-in-out infinite}
+@keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+h1{margin:0 0 18px;line-height:0}
+h1 svg{width:clamp(252px,32vw,330px);height:auto;display:block;color:var(--ink);
+  filter:drop-shadow(0 0 26px rgba(139,92,246,.42))}
+.sub{font-family:var(--mono);font-size:.82rem;letter-spacing:.02em;color:var(--violet);
+  margin-bottom:20px;text-transform:lowercase}
+.lede{font-size:1.1rem;line-height:1.66;color:var(--ink2);max-width:40rem;margin:0 0 1rem}
+.lede strong{color:var(--ink);font-weight:600}
+.grad{background:linear-gradient(95deg,var(--violet-hot),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
+.cta{display:flex;gap:11px;flex-wrap:wrap;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:9px;
+  font-weight:600;font-size:.93rem;text-decoration:none;transition:all .16s;position:relative}
+.btn-p{background:linear-gradient(100deg,var(--violet),var(--violet-hot));color:#fff;
+  box-shadow:0 0 0 1px rgba(168,85,247,.45),0 8px 26px -10px rgba(139,92,246,.85)}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(168,85,247,.7),0 12px 34px -10px rgba(139,92,246,1)}
+.btn-g{border:1px solid var(--line2);color:var(--ink);background:rgba(23,19,48,.6)}
+.btn-g:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px);
+  box-shadow:0 0 22px -6px rgba(69,212,247,.6)}
 
-/* sections */
-section{padding:54px 0;border-bottom:1px solid var(--line)}
-section:last-of-type{border-bottom:none}
-h2{font-size:clamp(1.5rem,3.4vw,2rem);font-weight:750;margin-bottom:.55rem}
-.kicker{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--amber);margin-bottom:.55rem}
-.intro{color:var(--ink-2);max-width:42rem;margin:0 0 1.9rem;font-size:1.02rem}
-p{margin:0 0 1rem;max-width:42rem;color:var(--ink-2)}
-p strong{color:var(--ink);font-weight:620}
-h3{font-size:1.05rem;font-weight:700;margin:2rem 0 .6rem;color:var(--ink)}
+/* ---------- live console ---------- */
+.console{border:1px solid var(--line);border-radius:13px;background:
+  linear-gradient(180deg,rgba(23,19,48,.95),rgba(18,15,34,.95));
+  box-shadow:0 26px 70px -32px rgba(0,0,0,.95),0 0 0 1px rgba(139,92,246,.1);overflow:hidden}
+.chead{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--line);
+  background:rgba(10,8,22,.65)}
+.dot{width:9px;height:9px;border-radius:50%}
+.ctitle{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin-left:6px}
+.clock{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--cyan);
+  text-shadow:0 0 12px rgba(69,212,247,.55)}
+.crow{display:grid;grid-template-columns:70px 1fr auto;gap:11px;align-items:center;
+  padding:9px 15px;border-bottom:1px solid rgba(36,29,68,.6);font-family:var(--mono);font-size:.76rem}
+.crow:last-child{border-bottom:none}
+.ct{color:var(--violet)}
+.cw{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{font-size:.63rem;letter-spacing:.07em;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.ok{background:rgba(69,212,247,.12);color:var(--cyan);border:1px solid rgba(69,212,247,.3)}
+.wait{background:rgba(255,107,122,.1);color:var(--coral);border:1px solid rgba(255,107,122,.28)}
+.crow.fire{animation:fire 6s ease-in-out infinite}
+@keyframes fire{0%,88%,100%{background:transparent}
+  90%{background:rgba(139,92,246,.16)}94%{background:rgba(139,92,246,.06)}}
+.cfoot{padding:11px 15px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted);
+  font-family:var(--body)}
+
+/* ---------- sections ---------- */
+section{padding:66px 0;position:relative}
+section+section{border-top:1px solid var(--line)}
+.kick{font-family:var(--mono);font-size:.69rem;font-weight:500;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--coral);margin-bottom:12px}
+h2{font-size:clamp(1.7rem,3.8vw,2.3rem);font-weight:700;margin-bottom:14px}
+.intro{color:var(--ink2);max-width:42rem;margin:0 0 30px;font-size:1.03rem}
+p{margin:0 0 1rem;max-width:42rem;color:var(--ink2)}
+p strong{color:var(--ink);font-weight:600}
+h3{font-size:1rem;font-weight:600;margin:2.1rem 0 .7rem;color:var(--ink);
+  font-family:var(--mono);letter-spacing:-.01em}
+h3::before{content:"// ";color:var(--violet)}
+
+/* flow steps */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:12px;margin:0 0 30px}
+.fstep{background:linear-gradient(165deg,rgba(23,19,48,.9),rgba(18,15,34,.6));
+  border:1px solid var(--line);border-radius:12px;padding:16px 17px;position:relative;
+  overflow:hidden;transition:border-color .18s,transform .18s}
+.fstep::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;
+  background:linear-gradient(90deg,var(--violet),var(--cyan));opacity:.75}
+.fstep:hover{border-color:var(--line2);transform:translateY(-3px)}
+.fstep b{display:block;font-family:var(--mono);font-size:.68rem;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:7px}
+.fstep span{font-size:.88rem;color:var(--ink2);line-height:1.56}
 
 /* code */
-pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
-  padding:16px 18px;overflow-x:auto;font-size:.845rem;line-height:1.62;margin:0 0 1.2rem}
-pre code{color:var(--ink)}
-.c{color:var(--muted)}
-.s{color:var(--amber)}
-.k{color:var(--teal-700);font-weight:500}
-p code,li code{background:var(--code-bg);border:1px solid var(--line);border-radius:5px;
-  padding:.08em .34em;font-size:.86em}
-
-/* flow diagram */
-.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 1.8rem}
-.fstep{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
-.fstep b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:.7rem;font-weight:700;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--teal-700);margin-bottom:.35rem}
-.fstep span{font-size:.9rem;color:var(--ink-2);line-height:1.5}
+pre{background:#0a0817;border:1px solid var(--line);border-radius:11px;padding:17px 19px;
+  overflow-x:auto;font-size:.82rem;line-height:1.66;margin:0 0 1.3rem;
+  box-shadow:inset 0 1px 0 rgba(139,92,246,.09)}
+pre code{color:#d8d3f0}
+.c{color:#6b6490;font-style:italic}
+.s{color:#ffb48a}
+.k{color:var(--violet-hot);font-weight:500}
+p code,td code,li code{background:rgba(139,92,246,.11);border:1px solid rgba(139,92,246,.22);
+  border-radius:5px;padding:.1em .38em;font-size:.86em;color:#c9b6ff}
 
 /* tables */
-table{width:100%;border-collapse:collapse;font-size:.92rem;margin:0 0 1.4rem;
-  border:1px solid var(--line);border-radius:10px;overflow:hidden}
-th{text-align:left;font-family:"Bricolage Grotesque",sans-serif;font-size:.7rem;font-weight:700;
-  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:9px 13px;
-  border-bottom:2px solid var(--line)}
-td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+.tw{overflow-x:auto;margin:0 0 1.5rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem;
+  border:1px solid var(--line);border-radius:11px;overflow:hidden}
+th{text-align:left;font-family:var(--mono);font-size:.66rem;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--cyan);padding:11px 14px;background:rgba(69,212,247,.05);
+  border-bottom:1px solid var(--line2)}
+td{padding:11px 14px;border-bottom:1px solid rgba(36,29,68,.7);vertical-align:top;color:var(--ink2)}
 tr:last-child td{border-bottom:none}
-td code{font-size:.84em}
-.tw{overflow-x:auto}
+td strong{color:var(--ink)}
 
 /* screenshots */
-figure{margin:0 0 1.5rem}
-figure img{width:100%;display:block;border:1px solid var(--line);border-radius:11px;
-  box-shadow:0 18px 44px -30px rgba(34,18,82,.5)}
-figcaption{font-size:.87rem;color:var(--muted);margin-top:.55rem}
-.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:1.3rem}
+figure{margin:0 0 1.7rem}
+figure img{width:100%;display:block;border:1px solid var(--line2);border-radius:12px;
+  box-shadow:0 30px 70px -36px rgba(0,0,0,1),0 0 0 1px rgba(139,92,246,.12)}
+figcaption{font-size:.84rem;color:var(--muted);margin-top:.6rem;font-family:var(--mono)}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.4rem}
+
+/* metric strip */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:8px 0 30px}
+.metric{border:1px solid var(--line);border-radius:11px;padding:15px 17px;
+  background:linear-gradient(165deg,rgba(23,19,48,.85),rgba(18,15,34,.5))}
+.mval{font-family:var(--disp);font-size:1.75rem;font-weight:700;letter-spacing:-.04em;
+  background:linear-gradient(95deg,var(--cyan),var(--violet-hot));-webkit-background-clip:text;
+  background-clip:text;color:transparent;line-height:1.1}
+.mlab{font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);margin-top:5px}
 
 /* footer */
-footer{padding:40px 0 70px;color:var(--muted);font-size:.9rem}
-footer a{color:var(--teal-700)}
-.cite{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--teal-700);
-  border-radius:8px;padding:13px 16px;font-size:.87rem;margin:0 0 1.3rem;max-width:42rem;color:var(--ink-2)}
+footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);
+  position:relative;z-index:1}
+.cite{background:linear-gradient(165deg,rgba(23,19,48,.9),rgba(18,15,34,.6));
+  border:1px solid var(--line);border-left:2px solid var(--violet);border-radius:10px;
+  padding:15px 18px;font-size:.87rem;margin:0 0 1.3rem;max-width:44rem;color:var(--ink2)}
+.cite strong{color:var(--ink)}
+@media (max-width:880px){.hero{grid-template-columns:1fr;gap:34px;padding:50px 0 44px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
 
-<div class="top">
-  <a class="brand" href="#top">
-    <img src="img/mark.svg" alt="" width="70" height="32">
-    tempo
-  </a>
-  <div class="toplinks">
+<div class="topbar"><div class="topin">
+  <a class="brand" href="#top"><img src="img/mark.svg" alt="" width="64" height="27">tempo</a>
+  <nav class="navlinks">
     <a href="#how">How it works</a>
-    <a href="#code">Sample code</a>
-    <a href="#ema">Momentary assessment</a>
-    <a href="#server">The server</a>
+    <a href="#code">Code</a>
+    <a href="#ema">EMA</a>
+    <a href="#server">Server</a>
     <a href="https://github.com/dzweben/tempo">GitHub</a>
-  </div>
-</div>
+  </nav>
+</div></div>
 
-<div class="wrap">
+<div class="wrap" id="top">
 
 <header class="hero">
-  <div class="eyebrow">Research software</div>
-  <h1>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 773" role="img" aria-label="tempo" class="logo">
-      <title>tempo</title>
-      <defs>
-        <radialGradient id="tNavy" cx="38%" cy="30%"><stop offset="0" stop-color="#33217a"/><stop offset="1" stop-color="#1a0f42"/></radialGradient>
-        <radialGradient id="tViolet" cx="36%" cy="28%"><stop offset="0" stop-color="#9457f5"/><stop offset="1" stop-color="#5715c6"/></radialGradient>
-        <radialGradient id="tCoral" cx="38%" cy="30%"><stop offset="0" stop-color="#f59a97"/><stop offset="1" stop-color="#de4a50"/></radialGradient>
-        <linearGradient id="tCyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9edfb"/><stop offset="1" stop-color="#63c9ec"/></linearGradient>
-      </defs>
-    
-      <g fill="none" stroke="#aeb6c8" stroke-linecap="round" stroke-opacity=".9">
-        <path d="M232 296 C330 288 320 150 420 150" stroke-width="12"/>
-        <path d="M238 330 C336 322 326 186 420 186" stroke-width="12"/>
-        <path d="M540 200 C620 232 626 330 632 336" stroke-width="12"/>
-        <path d="M520 232 C606 268 604 356 616 366" stroke-width="12"/>
-        <path d="M790 330 C860 320 848 222 884 210" stroke-width="12"/>
-        <path d="M784 364 C866 352 850 250 890 242" stroke-width="12"/>
-      </g>
-    
-      <circle cx="150" cy="315" r="92" fill="url(#tNavy)"/>
-      <circle cx="700" cy="348" r="92" fill="url(#tCoral)"/>
-      <circle cx="952" cy="212" r="76" fill="none" stroke="url(#tCyan)" stroke-width="26"/>
-      <circle cx="420" cy="168" r="122" fill="url(#tViolet)"/>
-    
-      <g fill="#fff">
-        <rect x="356" y="112" width="128" height="86" rx="18"/>
-        <path d="M384 198 L384 240 L426 198 Z"/>
-      </g>
-      <g fill="#5715c6">
-        <circle cx="389" cy="155" r="11.5"/><circle cx="420" cy="155" r="11.5"/><circle cx="451" cy="155" r="11.5"/>
-      </g>
-    
-      <g transform="translate(80.0,500.0) scale(0.31139419674451524)" fill="currentColor">
-        <g transform="translate(0,786.0) scale(0.1,-0.1)">
-    <path d="M1710 7845 l0 -15 -114 0 -114 0 -12 -15 -12 -15 -123 0 -123 0 -12
-    -15 -12 -15 -108 0 -108 0 -12 -15 -12 -14 -51 -3 -52 -3 -5 -610 -5 -610
-    -418 -3 -417 -2 0 -403 0 -402 23 -15 22 -15 395 -5 395 -5 3 -1626 2 -1627
-    15 -12 c8 -7 15 -20 15 -29 0 -21 40 -61 61 -61 8 0 142 -128 299 -285 l285
-    -285 1175 2 1175 3 0 415 0 415 -936 3 -937 2 -12 15 c-7 8 -20 15 -29 15 -9
-    0 -40 24 -69 53 l-52 53 0 31 c0 17 -7 36 -15 43 l-15 13 2 1431 3 1431 970 5
-    970 5 0 415 0 415 -970 5 -970 5 -3 673 -2 672 -45 0 -45 0 0 -15z"/>
-    <path d="M5100 6285 c-124 -124 -232 -225 -240 -225 -8 0 -66 -51 -128 -113
-    l-112 -112 2 -1715 3 -1715 20 -3 c11 -2 169 -152 350 -333 l330 -329 1805 2
-    1805 3 3 394 2 394 -22 24 -21 23 -1547 0 -1546 0 -29 30 c-16 17 -36 30 -45
-    30 -20 0 -90 71 -90 92 0 8 -7 21 -15 28 -8 7 -15 27 -15 45 0 18 -7 38 -15
-    45 l-15 12 0 452 0 453 23 21 23 22 1680 0 1681 0 21 23 22 23 0 975 0 975
-    -30 29 c-16 16 -30 36 -30 45 0 20 -70 90 -90 90 -9 0 -137 122 -285 270
-    l-270 270 -1500 0 -1500 0 -225 -225z m2700 -570 c7 -8 20 -15 29 -15 10 0 30
-    -13 46 -30 16 -16 39 -30 52 -30 l23 0 0 -23 0 -23 45 -44 45 -44 0 -392 0
-    -392 16 -12 15 -13 -3 -36 -3 -36 -52 -3 -51 -3 -12 -14 c-16 -19 -44 -19 -60
-    0 -7 8 -21 15 -32 15 -10 0 -21 -7 -24 -15 -4 -8 -12 -15 -19 -15 -7 0 -15 7
-    -19 15 l-5 15 -214 0 -215 0 -12 -15 -12 -15 -123 0 -123 0 -12 15 -12 15
-    -742 2 -741 3 -3 396 -2 396 15 13 c8 7 15 27 15 44 l0 32 30 29 c17 16 30 35
-    30 44 0 20 40 61 60 61 9 0 29 14 45 30 l29 30 932 0 932 0 12 15 12 15 48 0
-    48 0 12 -15z"/>
-    <path d="M10085 6498 c-3 -7 -4 -1079 -3 -2383 l3 -2370 490 0 490 0 3 1820 2
-    1820 82 82 c46 46 90 83 98 83 9 0 29 14 45 30 16 17 36 30 45 30 9 0 29 14
-    45 30 l29 30 677 0 677 0 12 -15 c7 -8 20 -15 29 -15 9 0 60 -44 114 -98 l97
-    -97 2 -1850 3 -1850 469 -3 469 -2 24 22 23 21 0 1832 0 1831 53 52 c29 29 60
-    52 68 52 8 0 28 14 44 30 16 17 36 30 45 30 9 0 29 14 45 30 l29 30 707 0 707
-    0 12 -15 c7 -8 20 -15 29 -15 21 0 151 -130 151 -152 0 -8 7 -21 15 -28 l15
-    -12 2 -1852 3 -1851 505 0 505 0 3 2045 2 2045 -127 127 -128 128 -22 0 -23 0
-    0 30 0 30 -23 0 -22 0 -180 180 -180 180 -870 0 -871 0 -59 -60 c-33 -33 -66
-    -60 -75 -60 -9 0 -42 -27 -75 -60 -33 -33 -66 -60 -75 -60 -9 0 -36 -20 -60
-    -45 -24 -25 -51 -45 -60 -45 -9 0 -42 -27 -75 -60 -33 -33 -67 -60 -75 -60 -9
-    0 -29 -13 -45 -30 -16 -16 -36 -30 -44 -30 -9 0 -104 88 -211 195 -107 107
-    -202 195 -210 195 -9 0 -42 27 -75 60 l-59 60 -812 0 -812 0 -12 -15 c-7 -8
-    -20 -15 -29 -15 -9 0 -37 -20 -61 -45 -24 -25 -51 -45 -60 -45 -9 0 -36 -20
-    -60 -45 -24 -25 -51 -45 -60 -45 -9 0 -36 -20 -60 -45 -24 -25 -51 -45 -60
-    -45 -8 0 -49 -34 -90 -75 l-75 -76 -35 3 -35 3 -3 20 c-2 11 -10 27 -18 36
-    l-14 15 -2 185 -3 184 -458 3 -458 2 -4 -12z"/>
-    <path d="M18067 6503 c-4 -3 -7 -1468 -7 -3255 l0 -3248 495 0 495 0 2 1063 3
-    1062 20 3 20 3 60 -61 c33 -33 66 -60 75 -60 9 0 36 -20 60 -45 24 -25 51 -45
-    60 -45 9 0 29 -13 45 -30 16 -16 36 -30 45 -30 9 0 36 -20 60 -45 24 -25 52
-    -45 61 -45 9 0 22 -7 29 -15 l12 -15 1157 0 1157 0 29 30 c16 16 39 30 52 30
-    l23 0 0 30 0 30 30 0 30 0 0 30 0 30 23 0 22 0 263 263 262 262 0 1680 0 1680
-    -353 353 -352 352 -1171 0 -1170 0 -29 -30 c-16 -16 -36 -30 -45 -30 -8 0 -42
-    -27 -75 -60 -33 -33 -66 -60 -75 -60 -9 0 -36 -20 -60 -45 -24 -25 -51 -45
-    -60 -45 -9 0 -63 -47 -120 -105 -56 -58 -107 -105 -111 -105 -5 0 -9 31 -9 69
-    l0 69 -15 12 -15 12 -2 157 -3 156 -456 3 c-250 1 -459 -1 -462 -5z m3480
-    -915 c46 -46 83 -90 83 -99 0 -9 7 -22 15 -29 l15 -12 0 -1323 0 -1323 -15
-    -12 c-8 -7 -15 -20 -15 -29 0 -8 -37 -53 -82 -98 l-83 -83 -1050 0 -1051 0
-    -29 30 c-16 17 -36 30 -44 30 -21 0 -151 130 -151 150 0 9 -13 29 -30 45 l-30
-    29 0 32 c0 17 -7 37 -15 44 l-15 12 0 1203 0 1203 15 12 c8 7 15 20 15 29 0 8
-    57 73 127 143 l128 128 1065 0 1065 0 82 -82z"/>
-    <path d="M24255 6360 c-82 -82 -157 -150 -166 -150 -22 0 -59 -42 -59 -68 l0
-    -22 -30 0 -30 0 0 -30 0 -30 -23 0 -22 0 -113 -113 -112 -112 2 -1715 3 -1715
-    28 -3 27 -3 0 -30 0 -29 30 0 30 0 0 -30 0 -30 23 0 22 0 270 -270 270 -270
-    1575 0 1575 0 240 240 c132 132 247 240 255 240 21 0 147 130 152 155 l3 20
-    28 3 27 3 0 1718 0 1718 -125 124 c-69 68 -134 125 -143 127 -10 2 -112 97
-    -227 212 l-210 210 -1575 0 -1575 0 -150 -150z m2850 -720 c16 -16 39 -30 52
-    -30 l23 0 0 -23 0 -23 45 -44 c25 -24 45 -52 45 -61 0 -9 7 -22 15 -29 l15
-    -12 0 -1263 0 -1263 -15 -12 -15 -12 0 -47 0 -47 -45 -44 -45 -44 0 -23 0 -23
-    -24 0 c-13 0 -29 -7 -36 -15 -7 -8 -20 -15 -30 -15 -10 0 -23 -7 -30 -15 l-12
-    -15 -1067 0 -1067 0 -29 30 c-16 17 -36 30 -44 30 -21 0 -151 130 -151 151 0
-    9 -7 22 -15 29 l-15 12 0 1308 0 1308 15 12 c8 7 15 20 15 28 0 21 100 122
-    120 122 9 0 29 14 45 30 l29 30 1096 0 1096 0 29 -30z"/>
+  <div>
+    <div class="tag">open-source research software</div>
+    <h1>      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 773" role="img" aria-label="tempo" class="logo">
+        <title>tempo</title>
+        <defs>
+          <radialGradient id="tNavy" cx="38%" cy="30%"><stop offset="0" stop-color="#33217a"/><stop offset="1" stop-color="#1a0f42"/></radialGradient>
+          <radialGradient id="tViolet" cx="36%" cy="28%"><stop offset="0" stop-color="#9457f5"/><stop offset="1" stop-color="#5715c6"/></radialGradient>
+          <radialGradient id="tCoral" cx="38%" cy="30%"><stop offset="0" stop-color="#f59a97"/><stop offset="1" stop-color="#de4a50"/></radialGradient>
+          <linearGradient id="tCyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9edfb"/><stop offset="1" stop-color="#63c9ec"/></linearGradient>
+        </defs>
+      
+        <g fill="none" stroke="#aeb6c8" stroke-linecap="round" stroke-opacity=".9">
+          <path d="M232 296 C330 288 320 150 420 150" stroke-width="12"/>
+          <path d="M238 330 C336 322 326 186 420 186" stroke-width="12"/>
+          <path d="M540 200 C620 232 626 330 632 336" stroke-width="12"/>
+          <path d="M520 232 C606 268 604 356 616 366" stroke-width="12"/>
+          <path d="M790 330 C860 320 848 222 884 210" stroke-width="12"/>
+          <path d="M784 364 C866 352 850 250 890 242" stroke-width="12"/>
         </g>
-      </g>
-    </svg>
-  </h1>
-  <div class="sub">Tracking, Engagement, Messaging &amp; Participant Outreach</div>
-  <p class="lede">
-    A survey platform holds the roster, a survey link per participant, date fields, and a
-    completion flag on every form. Messaging APIs handle SMS and email.
-    <strong>TEMPO connects the two:</strong> it reads the survey platform, works out which
-    participants are due a message and when, sends it, and logs the result.
-  </p>
-  <p class="lede">
-    Once the schedule is declared, it runs unattended. This covers reminders due on a given
-    day and <strong>EMA prompts that have to fire at an exact minute</strong>, 25 times across
-    a sampling period.
-  </p>
-  <div class="actions">
-    <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
-    <a class="btn btn-g" href="#server">See the server</a>
+      
+        <circle cx="150" cy="315" r="92" fill="url(#tNavy)"/>
+        <circle cx="700" cy="348" r="92" fill="url(#tCoral)"/>
+        <circle cx="952" cy="212" r="76" fill="none" stroke="url(#tCyan)" stroke-width="26"/>
+        <circle cx="420" cy="168" r="122" fill="url(#tViolet)"/>
+      
+        <g fill="#fff">
+          <rect x="356" y="112" width="128" height="86" rx="18"/>
+          <path d="M384 198 L384 240 L426 198 Z"/>
+        </g>
+        <g fill="#5715c6">
+          <circle cx="389" cy="155" r="11.5"/><circle cx="420" cy="155" r="11.5"/><circle cx="451" cy="155" r="11.5"/>
+        </g>
+      
+        <g transform="translate(80.0,500.0) scale(0.31139419674451524)" fill="currentColor">
+          <g transform="translate(0,786.0) scale(0.1,-0.1)">
+      <path d="M1710 7845 l0 -15 -114 0 -114 0 -12 -15 -12 -15 -123 0 -123 0 -12
+      -15 -12 -15 -108 0 -108 0 -12 -15 -12 -14 -51 -3 -52 -3 -5 -610 -5 -610
+      -418 -3 -417 -2 0 -403 0 -402 23 -15 22 -15 395 -5 395 -5 3 -1626 2 -1627
+      15 -12 c8 -7 15 -20 15 -29 0 -21 40 -61 61 -61 8 0 142 -128 299 -285 l285
+      -285 1175 2 1175 3 0 415 0 415 -936 3 -937 2 -12 15 c-7 8 -20 15 -29 15 -9
+      0 -40 24 -69 53 l-52 53 0 31 c0 17 -7 36 -15 43 l-15 13 2 1431 3 1431 970 5
+      970 5 0 415 0 415 -970 5 -970 5 -3 673 -2 672 -45 0 -45 0 0 -15z"/>
+      <path d="M5100 6285 c-124 -124 -232 -225 -240 -225 -8 0 -66 -51 -128 -113
+      l-112 -112 2 -1715 3 -1715 20 -3 c11 -2 169 -152 350 -333 l330 -329 1805 2
+      1805 3 3 394 2 394 -22 24 -21 23 -1547 0 -1546 0 -29 30 c-16 17 -36 30 -45
+      30 -20 0 -90 71 -90 92 0 8 -7 21 -15 28 -8 7 -15 27 -15 45 0 18 -7 38 -15
+      45 l-15 12 0 452 0 453 23 21 23 22 1680 0 1681 0 21 23 22 23 0 975 0 975
+      -30 29 c-16 16 -30 36 -30 45 0 20 -70 90 -90 90 -9 0 -137 122 -285 270
+      l-270 270 -1500 0 -1500 0 -225 -225z m2700 -570 c7 -8 20 -15 29 -15 10 0 30
+      -13 46 -30 16 -16 39 -30 52 -30 l23 0 0 -23 0 -23 45 -44 45 -44 0 -392 0
+      -392 16 -12 15 -13 -3 -36 -3 -36 -52 -3 -51 -3 -12 -14 c-16 -19 -44 -19 -60
+      0 -7 8 -21 15 -32 15 -10 0 -21 -7 -24 -15 -4 -8 -12 -15 -19 -15 -7 0 -15 7
+      -19 15 l-5 15 -214 0 -215 0 -12 -15 -12 -15 -123 0 -123 0 -12 15 -12 15
+      -742 2 -741 3 -3 396 -2 396 15 13 c8 7 15 27 15 44 l0 32 30 29 c17 16 30 35
+      30 44 0 20 40 61 60 61 9 0 29 14 45 30 l29 30 932 0 932 0 12 15 12 15 48 0
+      48 0 12 -15z"/>
+      <path d="M10085 6498 c-3 -7 -4 -1079 -3 -2383 l3 -2370 490 0 490 0 3 1820 2
+      1820 82 82 c46 46 90 83 98 83 9 0 29 14 45 30 16 17 36 30 45 30 9 0 29 14
+      45 30 l29 30 677 0 677 0 12 -15 c7 -8 20 -15 29 -15 9 0 60 -44 114 -98 l97
+      -97 2 -1850 3 -1850 469 -3 469 -2 24 22 23 21 0 1832 0 1831 53 52 c29 29 60
+      52 68 52 8 0 28 14 44 30 16 17 36 30 45 30 9 0 29 14 45 30 l29 30 707 0 707
+      0 12 -15 c7 -8 20 -15 29 -15 21 0 151 -130 151 -152 0 -8 7 -21 15 -28 l15
+      -12 2 -1852 3 -1851 505 0 505 0 3 2045 2 2045 -127 127 -128 128 -22 0 -23 0
+      0 30 0 30 -23 0 -22 0 -180 180 -180 180 -870 0 -871 0 -59 -60 c-33 -33 -66
+      -60 -75 -60 -9 0 -42 -27 -75 -60 -33 -33 -66 -60 -75 -60 -9 0 -36 -20 -60
+      -45 -24 -25 -51 -45 -60 -45 -9 0 -42 -27 -75 -60 -33 -33 -67 -60 -75 -60 -9
+      0 -29 -13 -45 -30 -16 -16 -36 -30 -44 -30 -9 0 -104 88 -211 195 -107 107
+      -202 195 -210 195 -9 0 -42 27 -75 60 l-59 60 -812 0 -812 0 -12 -15 c-7 -8
+      -20 -15 -29 -15 -9 0 -37 -20 -61 -45 -24 -25 -51 -45 -60 -45 -9 0 -36 -20
+      -60 -45 -24 -25 -51 -45 -60 -45 -9 0 -36 -20 -60 -45 -24 -25 -51 -45 -60
+      -45 -8 0 -49 -34 -90 -75 l-75 -76 -35 3 -35 3 -3 20 c-2 11 -10 27 -18 36
+      l-14 15 -2 185 -3 184 -458 3 -458 2 -4 -12z"/>
+      <path d="M18067 6503 c-4 -3 -7 -1468 -7 -3255 l0 -3248 495 0 495 0 2 1063 3
+      1062 20 3 20 3 60 -61 c33 -33 66 -60 75 -60 9 0 36 -20 60 -45 24 -25 51 -45
+      60 -45 9 0 29 -13 45 -30 16 -16 36 -30 45 -30 9 0 36 -20 60 -45 24 -25 52
+      -45 61 -45 9 0 22 -7 29 -15 l12 -15 1157 0 1157 0 29 30 c16 16 39 30 52 30
+      l23 0 0 30 0 30 30 0 30 0 0 30 0 30 23 0 22 0 263 263 262 262 0 1680 0 1680
+      -353 353 -352 352 -1171 0 -1170 0 -29 -30 c-16 -16 -36 -30 -45 -30 -8 0 -42
+      -27 -75 -60 -33 -33 -66 -60 -75 -60 -9 0 -36 -20 -60 -45 -24 -25 -51 -45
+      -60 -45 -9 0 -63 -47 -120 -105 -56 -58 -107 -105 -111 -105 -5 0 -9 31 -9 69
+      l0 69 -15 12 -15 12 -2 157 -3 156 -456 3 c-250 1 -459 -1 -462 -5z m3480
+      -915 c46 -46 83 -90 83 -99 0 -9 7 -22 15 -29 l15 -12 0 -1323 0 -1323 -15
+      -12 c-8 -7 -15 -20 -15 -29 0 -8 -37 -53 -82 -98 l-83 -83 -1050 0 -1051 0
+      -29 30 c-16 17 -36 30 -44 30 -21 0 -151 130 -151 150 0 9 -13 29 -30 45 l-30
+      29 0 32 c0 17 -7 37 -15 44 l-15 12 0 1203 0 1203 15 12 c8 7 15 20 15 29 0 8
+      57 73 127 143 l128 128 1065 0 1065 0 82 -82z"/>
+      <path d="M24255 6360 c-82 -82 -157 -150 -166 -150 -22 0 -59 -42 -59 -68 l0
+      -22 -30 0 -30 0 0 -30 0 -30 -23 0 -22 0 -113 -113 -112 -112 2 -1715 3 -1715
+      28 -3 27 -3 0 -30 0 -29 30 0 30 0 0 -30 0 -30 23 0 22 0 270 -270 270 -270
+      1575 0 1575 0 240 240 c132 132 247 240 255 240 21 0 147 130 152 155 l3 20
+      28 3 27 3 0 1718 0 1718 -125 124 c-69 68 -134 125 -143 127 -10 2 -112 97
+      -227 212 l-210 210 -1575 0 -1575 0 -150 -150z m2850 -720 c16 -16 39 -30 52
+      -30 l23 0 0 -23 0 -23 45 -44 c25 -24 45 -52 45 -61 0 -9 7 -22 15 -29 l15
+      -12 0 -1263 0 -1263 -15 -12 -15 -12 0 -47 0 -47 -45 -44 -45 -44 0 -23 0 -23
+      -24 0 c-13 0 -29 -7 -36 -15 -7 -8 -20 -15 -30 -15 -10 0 -23 -7 -30 -15 l-12
+      -15 -1067 0 -1067 0 -29 30 c-16 17 -36 30 -44 30 -21 0 -151 130 -151 151 0
+      9 -7 22 -15 29 l-15 12 0 1308 0 1308 15 12 c8 7 15 20 15 28 0 21 100 122
+      120 122 9 0 29 14 45 30 l29 30 1096 0 1096 0 29 -30z"/>
+          </g>
+        </g>
+      </svg></h1>
+    <div class="sub">tracking · engagement · messaging · participant outreach</div>
+    <p class="lede">
+      A survey platform holds the roster, a survey link per participant, date fields, and a
+      completion flag on every form. Messaging APIs handle SMS and email.
+      <span class="grad">TEMPO connects the two:</span> it reads the survey platform, works out
+      which participants are due a message and when, sends it, and logs the result.
+    </p>
+    <p class="lede">
+      Once the schedule is declared, it runs unattended &mdash; for a reminder due on a given
+      day, and for an EMA prompt that has to fire at an exact minute, 25 times across a
+      sampling period.
+    </p>
+    <div class="cta">
+      <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
+      <a class="btn btn-g" href="#server">See the server</a>
+      <a class="btn btn-g" href="https://doi.org/10.5281/zenodo.22925367">DOI</a>
+    </div>
+  </div>
+
+  <div class="console">
+    <div class="chead">
+      <span class="dot" style="background:#ff5f57"></span>
+      <span class="dot" style="background:#febc2e"></span>
+      <span class="dot" style="background:#28c840"></span>
+      <span class="ctitle">send queue</span>
+      <span class="clock" id="clk">--:--:--</span>
+    </div>
+    <div class="crow"><span class="ct">08:40:00</span><span class="cw">check-in prompt &middot; day 6</span><span class="pill ok">sent +2s</span></div>
+    <div class="crow"><span class="ct">10:00:00</span><span class="cw">visit reminder &middot; 3 days out</span><span class="pill ok">sent +1s</span></div>
+    <div class="crow"><span class="ct">17:00:00</span><span class="cw">monthly survey &middot; follow-up 1</span><span class="pill ok">sent +3s</span></div>
+    <div class="crow fire"><span class="ct">18:01:00</span><span class="cw">check-in prompt &middot; day 6</span><span class="pill wait">queued</span></div>
+    <div class="crow"><span class="ct">19:36:00</span><span class="cw">compensation notice</span><span class="pill wait">queued</span></div>
+    <div class="cfoot">Latency is measured from the scheduled second, not from whenever the scheduler woke up.</div>
   </div>
 </header>
 
+
 <section id="how">
-  <div class="kicker">How it works</div>
+  <div class="kick">How it works</div>
   <h2>Dates in, messages out</h2>
   <p class="intro">
     Each message is declared once. The pipeline expands the declarations against the current
     export into dated rows. Senders drain that queue on a clock.
   </p>
-
   <div class="flow">
-    <div class="fstep"><b>1 · Pull</b><span>Export records, date fields and completion flags. Resolve each participant's survey link.</span></div>
-    <div class="fstep"><b>2 · Compute</b><span>Turn each declaration into a timestamp: a date field plus an offset, gated on a completion flag.</span></div>
-    <div class="fstep"><b>3 · Send</b><span>Send what is due over SMS and email, with the participant's link substituted in.</span></div>
-    <div class="fstep"><b>4 · Record</b><span>Append to a ledger so the same message cannot go twice.</span></div>
+    <div class="fstep"><b>01 &middot; pull</b><span>Export records, date fields and completion flags. Resolve each participant's survey link.</span></div>
+    <div class="fstep"><b>02 &middot; compute</b><span>Turn each declaration into a timestamp: a date field plus an offset, gated on a completion flag.</span></div>
+    <div class="fstep"><b>03 &middot; send</b><span>Send what is due over SMS and email, with the participant's link substituted in.</span></div>
+    <div class="fstep"><b>04 &middot; record</b><span>Append to a ledger so the same message cannot go twice.</span></div>
   </div>
-
+  <div class="metrics">
+    <div class="metric"><div class="mval">2&ndash;4s</div><div class="mlab">prompt latency</div></div>
+    <div class="metric"><div class="mval">3&times;</div><div class="mlab">dedup layers</div></div>
+    <div class="metric"><div class="mval">SMS + email</div><div class="mlab">channels</div></div>
+    <div class="metric"><div class="mval">0</div><div class="mlab">servers to run</div></div>
+  </div>
   <p>
     The build here uses REDCap, OpenPhone and Gmail SMTP. Swapping any of them means
     reimplementing a few calls &mdash; Qualtrics, Twilio and SES expose the same primitives.
   </p>
-
   <div class="tw">
   <table>
     <tr><th>Integration point</th><th>What TEMPO needs from it</th></tr>
@@ -369,7 +451,6 @@ footer a{color:var(--teal-700)}
     switch that takes effect without a redeploy.
   </p>
 </section>
-
 <section id="ema">
   <div class="kicker">Momentary assessment</div>
   <h2>Prompts on the minute</h2>
@@ -421,7 +502,6 @@ footer a{color:var(--teal-700)}
     to the ledger per message.
   </p>
 </section>
-
 <section id="server">
   <div class="kicker">The server</div>
   <h2>A dashboard over the whole thing</h2>
@@ -462,18 +542,28 @@ footer a{color:var(--teal-700)}
     anything missing.
   </p>
 </section>
+</div>
 
-<footer class="wrap">
+<footer><div class="wrap">
   <div class="cite">
-    <strong>Citing TEMPO.</strong> Zweben, D. (2026). <em>TEMPO: Tracking, Engagement, Messaging
-    &amp; Participant Outreach</em> [Computer software]. Zenodo.
+    <strong>Citing TEMPO.</strong> Zweben, D. (2026). <em>TEMPO (Tracking, Engagement, Messaging
+    &amp; Participant Outreach): automated survey scheduling and participant messaging for
+    longitudinal studies</em> [Computer software]. Zenodo.
     <a href="https://doi.org/10.5281/zenodo.22925367">https://doi.org/10.5281/zenodo.22925367</a>
   </div>
-  <p style="max-width:42rem">
-    MIT licensed · <a href="https://github.com/dzweben/tempo">github.com/dzweben/tempo</a>
-  </p>
-</footer>
+  <p style="max-width:44rem">MIT licensed &middot; <a href="https://github.com/dzweben/tempo">github.com/dzweben/tempo</a></p>
+</div></footer>
 
-</div>
+<script>
+(function(){
+  var el=document.getElementById('clk');
+  function tick(){
+    var d=new Date();
+    el.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()]
+      .map(function(n){return String(n).padStart(2,'0')}).join(':');
+  }
+  tick(); setInterval(tick,1000);
+})();
+</script>
 </body>
 </html>
