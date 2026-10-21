@@ -11,11 +11,7 @@ studies. It reads a study's REDCap or Qualtrics database, sends each participant
 reminders, survey invitations, follow-ups and timed prompts they are due, and tracks what
 they have completed.
 
-Keeping up with that by hand is a daily job, and it fails quietly: a reminder nobody set, a
-participant chased after they already responded, a timed prompt that arrives late and
-produces data that still looks valid. Every decision TEMPO makes comes from the dates and
-completion flags already in the study database, so the schedule stays correct as those
-change.
+Every participant is on a different schedule, built from their own dates, and whether something is still owed depends on which forms they have finished. TEMPO recomputes all of that from the database on each run, so a corrected date or a new completion takes effect immediately.
 
 It is built for studies that run for months or years, where every participant is on their own
 schedule and the messages need to be a conversation. Texts go through the study's own phone
