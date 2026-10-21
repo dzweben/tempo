@@ -6,14 +6,15 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22925367.svg)](https://doi.org/10.5281/zenodo.22925367)
 
-TEMPO runs the outbound side of a longitudinal study. It reads a study out of
-REDCap or Qualtrics, works out who is owed a message today, sends it by text or
-email, and keeps a record of everything it sent.
+TEMPO is a scheduling and tracking layer that sits on top of a study's survey platform. It
+reads participants out of REDCap or Qualtrics, works out who is due to get something, sends
+it by text or email, logs what went out, and shows completion status on a dashboard.
 
-It does that for NIH-funded longitudinal research, covering visit reminders,
-the questionnaires that open up after a visit, momentary-assessment prompts that
-have to land on a particular minute, at-home task notices and compensation
-emails, for several hundred participants.
+It handles four things: messages scheduled off each participant's own dates,
+momentary-assessment prompts that have to go at an exact minute, completion tracking across
+instruments and study phases, and a nightly check that what was supposed to send actually
+sent. It runs the participant communication for NIH-funded longitudinal research, covering
+several hundred participants.
 
 This repository is published as a record of how that system works. It is not
 software you can install, and there is no quickstart here, because there is no
@@ -22,25 +23,18 @@ study](#running-this-for-a-real-study) explains why.
 
 ---
 
-## The problem
+## What it is for
 
-Almost everything a study sends to a participant is decided by a date that is
-already sitting in the study database. Someone consents on the 4th, so their
-baseline questionnaire opens on the 11th. They come in for a visit on the 3rd, so
-the between-visit survey goes out a week later, and again the week after that
-unless they have already filled it in. They are in the momentary-assessment arm,
-so they get twenty-five prompts over the next ten days and each one has to arrive
-at a specific minute.
+Scheduling in a longitudinal study is driven by dates that are already in the survey
+database. A participant consents on the 4th, so their baseline questionnaire opens on the
+11th. They attend a visit on the 3rd, so the between-visit survey goes out a week later, and
+again the week after unless they have already completed it. Someone in the
+momentary-assessment arm gets twenty-five prompts over ten days, each at a specific minute.
 
-In a study that runs for years, keeping on top of that is somebody's actual job,
-every day. Doing it from a calendar instead goes wrong quietly. A reminder never
-gets set. Someone who already responded gets chased anyway, which is the kind of
-thing that makes people drop out. A prompt goes at 9:14 instead of 9:10, and the
-answer it gets back sits in the dataset looking exactly like a good one. By the
-time anybody notices, the window has closed and the data is gone.
-
-The dates are already in the survey platform, and the messaging providers already
-send texts and email. TEMPO connects the two and keeps a record of what it sent.
+Tracking is the other half of the same data. The completion flags that decide whether to send
+a reminder also tell you how far through their sequence each participant is, which
+instruments are outstanding, and where a wave stands overall. TEMPO computes the schedule and
+reports the state from one pass over the same records.
 
 ## What it handles
 
@@ -86,59 +80,51 @@ Every run does the same five things, start to finish.
 
 ### The grid
 
-You never have to write a date down. You write the rule that produces one:
-fourteen days after the baseline visit, then every week after that, up to three
-times, and only while the form is still sitting incomplete. On each run TEMPO
-takes those rules, runs them against whoever is currently on the roster, and gets
-back one line per person for each time a message is owed, with a real timestamp,
-somewhere to send it, and a body already filled in. Together those lines are the
-whole schedule for the study.
+You write a rule instead of a date: fourteen days after the baseline visit, repeating
+weekly, up to three times, while the form is still incomplete. Each run evaluates those rules
+against the current roster and produces one row per participant for each time a message is
+due, with the timestamp, the destination and the message body already filled in. Those rows
+are the whole schedule for the study.
 
-The grid gets thrown away and rebuilt every run, and the only thing that survives
-in between is the record of what already went out. Rebuilding from scratch is
-what makes a correction cheap: when a coordinator fixes a wrong visit date in
-REDCap, every message hanging off that date is simply correct on the next run.
+The grid is thrown away and rebuilt on every run. The only thing kept between runs is the
+ledger of what has been sent. That is what makes fixing things cheap: if a coordinator
+corrects a wrong visit date in REDCap, every message anchored to that date is right on the
+next run.
 
 ### What counts as a trigger
 
-A rule has two parts and both of them point at the study database. The condition
-that decides whether a message is owed is a field reference, written
-`[event][field]`, and so is the date its timing hangs off. There is no list of
-message types anywhere in the code, and no special handling for momentary
-assessment or for visit reminders. A condition is a field that is not marked
-complete yet. An anchor is a date field on some event.
+A rule has two parts and both point at the survey platform. The condition that decides
+whether a message is owed is a field reference, written `[event][field]`, and so is the date
+it counts from. There is no list of message types in the code and no special case for
+momentary assessment or for visit reminders. A condition is a field that is not marked
+complete. An anchor is a date field on some event.
 
-Which means schedules chain on their own. Logging a visit and marking an
-instrument complete are both just a field changing, and some other rule is
-sitting there watching that field. Log a visit and the questionnaires hanging off
-it come due. Fill those in and their reminders stop, while the date you just
-entered becomes the anchor for whatever comes next. That ordering is never
-written down anywhere; it comes out of the field references, which is why a
-three-year protocol that branches on what participants actually do still looks
-like a flat list of rules.
+Because of that, schedules chain without anyone sequencing them. Completing an instrument
+changes a field that another rule is watching. Record a visit and its questionnaires come
+due. Complete those and their reminders stop, and the visit date becomes the anchor for the
+next phase. Nobody writes that ordering down. It comes out of the field references, which is
+why a three-year protocol that branches on what participants do is still a flat list of
+rules.
 
 ### The clock
 
-There is no daemon sitting there waiting. Cron calls the thing, and the only real
-requirement is that it calls often enough that no slot falls through a gap
-between runs. A reminder due at 5pm is covered by a run at 5pm. A prompt that has
-to land at 8:10 needs runs overlapping that slot, because cron will not fire you
-at 8:10:00 and there is no point pretending it will. The run picks the slot up
-early and then sits there until the second comes around. In practice prompts land
-two to four seconds after the second they were scheduled for, and that number
-goes in the ledger next to every message, so if it ever starts drifting you can
-see it happening.
+Nothing runs continuously. Cron invokes the pipeline, and the only requirement is that it
+runs often enough that no slot falls between runs. A reminder due at 5pm is covered by a run
+at 5pm. A prompt that has to arrive at 8:10 needs runs that overlap that slot, because cron
+will not fire at exactly 8:10:00. The run picks the slot up early and waits in process until
+the scheduled second. In practice prompts land two to four seconds after the second they were
+scheduled for, and that figure is written to the ledger for every message, so drift is
+visible.
 
-You can run it as often as you like. Every run rebuilds the grid off a fresh
-export and checks the ledger before it sends anything, so a spare invocation
-finds nothing to do and exits. How often you call it comes down to how tight the
-timing has to be.
+You can run it as often as you want. Each run rebuilds the grid from a fresh export and checks
+the ledger before sending, so an extra run finds nothing to do and exits. How often you run it
+depends on how precise the timing needs to be.
 
 ## Not sending the same thing twice
 
-You cannot unsend a text message, and many of the participants are minors. A
-double-send or a text at 3am is a protocol violation. Three separate things have
-to fail before the same message goes out twice.
+Three separate checks have to fail before the same message goes out twice. Duplicates matter
+more here than in most software: a repeat text, or one that arrives at 3am, is a protocol
+deviation the study has to report, and many participants are minors.
 
 - **The ledger.** Every send gets appended to a log keyed by participant,
   message, time, channel and recipient. Any later run checks that log before it
