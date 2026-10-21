@@ -79,10 +79,11 @@ code,pre{font-family:var(--mono)}
 .snode.on em{color:var(--cyan)}
 
 /* ---------- reveal ---------- */
-[data-rev]{opacity:0;transform:translateY(22px);filter:blur(8px);
+/* hidden only under .js-rev, which the head script adds when it is safe to */
+.js-rev [data-rev]{opacity:0;transform:translateY(22px);filter:blur(8px);
   transition:opacity .66s var(--ease),transform .66s var(--ease),filter .66s var(--ease);
   transition-delay:var(--d,0ms)}
-[data-rev].in{opacity:1;transform:none;filter:none}
+.js-rev [data-rev].in{opacity:1;transform:none;filter:none}
 
 /* ---------- top bar ---------- */
 .topbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
@@ -360,7 +361,7 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important}
-  [data-rev]{opacity:1!important;transform:none!important;filter:none!important}
+  .js-rev [data-rev]{opacity:1!important;transform:none!important;filter:none!important}
   html{scroll-behavior:auto}
 }
 
@@ -394,6 +395,13 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
   border-radius:50%;background:var(--coral);box-shadow:0 0 13px var(--coral)}
 @media (max-width:640px){.track{height:138px;margin:0 12px}.dlab{font-size:.53rem;letter-spacing:.06em}}
 </style>
+<script>
+/* Arm the reveal system before first paint, and only when it can actually run.
+   If this never executes, nothing on the page is ever hidden. */
+try{ if ('IntersectionObserver' in window &&
+         !matchMedia('(prefers-reduced-motion: reduce)').matches)
+       document.documentElement.classList.add('js-rev'); }catch(e){}
+</script>
 </head>
 <body>
 <div class="grain"></div>
@@ -625,16 +633,16 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
       <span class="dot" style="background:#ff5f57"></span>
       <span class="dot" style="background:#febc2e"></span>
       <span class="dot" style="background:#28c840"></span>
-      <div class="tabs" role="tablist">
-        <button class="tab on" role="tab" aria-selected="true">declare.js</button>
-        <button class="tab" role="tab" aria-selected="false">schedule.js</button>
-        <button class="tab" role="tab" aria-selected="false">send-sms.js</button>
-        <button class="tab" role="tab" aria-selected="false">send-email.js</button>
+      <div class="tabs" role="tablist" aria-label="Code examples">
+        <button type="button" class="tab on" role="tab" aria-selected="true">declare.js</button>
+        <button type="button" class="tab" role="tab" aria-selected="false">schedule.js</button>
+        <button type="button" class="tab" role="tab" aria-selected="false">send-sms.js</button>
+        <button type="button" class="tab" role="tab" aria-selected="false">send-email.js</button>
       </div>
-      <button class="copy" id="copy">copy</button>
+      <button type="button" class="copy" id="copy">copy</button>
     </div>
 
-    <div class="pane on"><div class="cwb"><div class="gut"></div><pre><code>{
+    <div class="pane on" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code>{
   instrument: <span class="s">"Follow-up reminder"</span>,
 
   <span class="c">// Owed only while the form is still incomplete.</span>
@@ -655,7 +663,7 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
       <div class="cwf"><b>Declaring a message.</b> One entry: when it is owed, when it fires, where it goes, what it says.</div>
     </div>
 
-    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
+    <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
 <span class="k">const</span> { offsetDays, everyDays, maxTimes } = parseSpec(alert.sendDateSpec);
 
 <span class="k">const</span> sends = [];
@@ -667,7 +675,7 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
       <div class="cwf"><b>Computing the send time.</b> Resolved per participant against their own dates. Repeats stop when the completion flag flips, so responders are not chased.</div>
     </div>
 
-    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="k">await</span> fetch(<span class="s">"https://api.openphone.com/v1/messages"</span>, {
+    <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">await</span> fetch(<span class="s">"https://api.openphone.com/v1/messages"</span>, {
   method: <span class="s">"POST"</span>,
   headers: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span>, Authorization: API_KEY },
   body: JSON.stringify({ content: body, from: FROM_NUMBER, to: [e164] }),
@@ -676,7 +684,7 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
       <div class="cwf"><b>Sending a text.</b> One HTTP call. Any provider with a send endpoint drops in here.</div>
     </div>
 
-    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
+    <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
   host: <span class="s">"smtp.gmail.com"</span>, port: <span class="s">587</span>, secure: <span class="k">false</span>,
   pool: <span class="k">true</span>, auth: { user: SMTP_USER, pass: SMTP_PASS },
 });
@@ -744,13 +752,13 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
       <span class="dot" style="background:#ff5f57"></span>
       <span class="dot" style="background:#febc2e"></span>
       <span class="dot" style="background:#28c840"></span>
-      <div class="tabs" role="tablist">
-        <button class="tab on" role="tab" aria-selected="true">grid.js</button>
-        <button class="tab" role="tab" aria-selected="false">fire.js</button>
+      <div class="tabs" role="tablist" aria-label="Code examples">
+        <button type="button" class="tab on" role="tab" aria-selected="true">grid.js</button>
+        <button type="button" class="tab" role="tab" aria-selected="false">fire.js</button>
       </div>
-      <button class="copy">copy</button>
+      <button type="button" class="copy">copy</button>
     </div>
-    <div class="pane on"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// A sampling grid: slots repeat across the period, anchored per participant.</span>
+    <div class="pane on" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// A sampling grid: slots repeat across the period, anchored per participant.</span>
 <span class="k">const</span> GRID = [
   { day: <span class="s">"Mon"</span>, at: <span class="s">"08:10"</span> }, { day: <span class="s">"Mon"</span>, at: <span class="s">"13:45"</span> }, { day: <span class="s">"Mon"</span>, at: <span class="s">"19:20"</span> },
   <span class="c">// … 25 slots across the sampling period</span>
@@ -766,7 +774,7 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
 }</code></pre></div>
       <div class="cwf"><b>Expanding the grid.</b> Fixed weekday and clock-time slots, anchored to each participant's own start date.</div>
     </div>
-    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
+    <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
 <span class="k">const</span> waitMs = slot.sendAt - Date.now();
 <span class="k">if</span> (waitMs &gt; <span class="s">0</span>) <span class="k">await</span> sleep(waitMs);
 
@@ -812,16 +820,16 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
         <img src="img/dash-sent.png" alt="Sent log listing each delivered message with channel, recipient and status" loading="lazy">
       </div>
     </div>
-    <div class="picks" id="picks" role="tablist">
-      <button class="pick on" role="tab" data-path="/dashboard/overview">
+    <div class="picks" id="picks" role="tablist" aria-label="Dashboard screens">
+      <button type="button" class="pick on" role="tab" aria-selected="true" data-path="/dashboard/overview">
         <b>Overview</b><em>Totals, a histogram of prompts delivered per participant, and completion by study phase.</em></button>
-      <button class="pick" role="tab" data-path="/dashboard/ema">
+      <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/ema">
         <b>Per-subject sequence</b><em>One row per participant across their own sampling grid &mdash; which prompts landed, which were missed, where they are now.</em></button>
-      <button class="pick" role="tab" data-path="/dashboard/participants">
+      <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/participants">
         <b>Roster</b><em>Every participant with their position in the sequence and what is still owed.</em></button>
-      <button class="pick" role="tab" data-path="/dashboard/queue">
+      <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/queue">
         <b>Queue</b><em>Scheduled messages grouped by day, before they go.</em></button>
-      <button class="pick" role="tab" data-path="/dashboard/sent">
+      <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/sent">
         <b>Sent log</b><em>What already went out, with channel, recipient and status.</em></button>
     </div>
   </div>
@@ -850,6 +858,8 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
 <script>
 (function(){
 var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var unhide = function(){ document.documentElement.classList.remove('js-rev'); };
+addEventListener('error', unhide);
 var $  = function(s,r){return (r||document).querySelector(s)};
 var $$ = function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 
@@ -909,13 +919,15 @@ navA.concat(spineA).forEach(function(a){
 onScroll();
 
 /* ===== 3. reveal ============================================== */
-if (RM) { $$('[data-rev]').forEach(function(n){n.classList.add('in')}); }
-else {
-  var ro = new IntersectionObserver(function(es){
-    es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); ro.unobserve(e.target); } });
-  }, {rootMargin:'0px 0px -8% 0px', threshold:.08});
-  $$('[data-rev]').forEach(function(n){ ro.observe(n); });
-}
+try {
+  if (RM || !('IntersectionObserver' in window)) { unhide(); }
+  else {
+    var ro = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); ro.unobserve(e.target); } });
+    }, {rootMargin:'0px 0px -8% 0px', threshold:.08});
+    $$('[data-rev]').forEach(function(n){ ro.observe(n); });
+  }
+} catch(e){ unhide(); }
 
 /* ===== 4. code windows: tabs, gutters, copy =================== */
 $$('.cw').forEach(function(cw){
@@ -924,11 +936,25 @@ $$('.cw').forEach(function(cw){
     var code = $('pre', p).textContent.replace(/\n$/,'').split('\n');
     $('.gut', p).textContent = code.map(function(_,i){return i+1}).join('\n');
   });
+  function select(i, refocus){
+    tabs.forEach(function(x,j){
+      var on = i===j;
+      x.classList.toggle('on', on); x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1;
+    });
+    panes.forEach(function(p,j){ p.classList.toggle('on', i===j); });
+    copy.textContent = 'copy'; copy.classList.remove('done');
+    if (refocus) tabs[i].focus();
+  }
   tabs.forEach(function(t,i){
-    t.addEventListener('click', function(){
-      tabs.forEach(function(x,j){ x.classList.toggle('on', i===j); x.setAttribute('aria-selected', i===j); });
-      panes.forEach(function(p,j){ p.classList.toggle('on', i===j); });
-      copy.textContent = 'copy'; copy.classList.remove('done');
+    t.tabIndex = i===0 ? 0 : -1;
+    t.addEventListener('click', function(){ select(i); });
+    t.addEventListener('keydown', function(e){
+      var n = tabs.length, j = -1;
+      if (e.key==='ArrowRight')     j = (i+1) % n;
+      else if (e.key==='ArrowLeft') j = (i+n-1) % n;
+      else if (e.key==='Home')      j = 0;
+      else if (e.key==='End')       j = n-1;
+      if (j >= 0){ e.preventDefault(); select(j, true); }
     });
   });
   copy.addEventListener('click', function(){
