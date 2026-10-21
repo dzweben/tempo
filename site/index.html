@@ -563,8 +563,7 @@ try{ if ('IntersectionObserver' in window &&
     </p>
     <p class="lede sm" data-rev style="--d:240ms">
       What takes this past reminders is that the thing being watched is a
-      <strong>field</strong>. Logging a visit is a field changing. Marking an instrument
-      complete is a field changing. So one message finishing can be what makes the next one
+      <strong>field</strong>. Logging a visit and marking an instrument complete are both just a field changing. So one message finishing can be what makes the next one
       due, and you can describe a protocol that runs for three years and branches on what
       people actually do.
     </p>
@@ -597,8 +596,7 @@ try{ if ('IntersectionObserver' in window &&
   <p class="intro" data-rev>
     The study database already knows when things ought to happen. There is a consent date in
     there, a baseline visit, a form nobody has filled in yet. TEMPO turns all of that into a
-    dated list of messages and works through it. The five steps below happen start to finish
-    on every run &mdash; nothing is kept warm in between.
+    dated list of messages and works through it. The five steps below happen start to finish on every run.
   </p>
 
   <div class="arch" data-rev>
@@ -740,8 +738,7 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="sublab" data-rev>the grid</div>
   <p data-rev>
-    You never write down a date. You write down the rule that produces one: fourteen days
-    after the baseline visit, then every week after that, up to three times, and only while
+    A message is declared as a rule, and the rule is what produces the date: fourteen days after the baseline visit, then every week after that, up to three times, and only while
     the form is still sitting incomplete. On each run TEMPO takes those rules, runs them
     against whoever is currently on the roster, and gets back one line per person per time
     the message is owed &mdash; each with a real timestamp, somewhere to send it, and a body
@@ -749,10 +746,9 @@ try{ if ('IntersectionObserver' in window &&
   </p>
   <p data-rev>
     It gets thrown away and rebuilt every run. The only thing that survives in between is the
-    record of what already went out. That sounds wasteful, and it is the most useful property
-    the thing has: when a coordinator fixes a wrong visit date in REDCap, every message
-    hanging off that date is simply correct on the next run. Nothing is holding the old
-    answer, so there is nothing to go and reconcile.
+    record of what already went out. Rebuilding from scratch is what makes a correction cheap:
+    when a coordinator fixes a wrong visit date in REDCap, every message hanging off that date
+    is simply correct on the next run.
   </p>
   <p data-rev>
     Once you have the grid, working out what to send is just filtering it. Take the lines due
@@ -767,16 +763,15 @@ try{ if ('IntersectionObserver' in window &&
     decides whether the message is owed is a field reference, written
     <code>[event][field]</code>. So is the date its timing hangs off. There is no list of
     message types anywhere in the code, and no special handling for EMA or for visit
-    reminders. A condition is a field that is not marked complete yet. An anchor is a date
-    field on some event. That is the whole vocabulary.
+    reminders. A condition is a field that is not marked complete yet. An anchor is a date field on some event.
   </p>
   <p data-rev>
     Which means schedules chain on their own. Completing an instrument changes a field, and
     some other rule is sitting there watching that field. Log a visit and the questionnaires
     hanging off it come due. Fill those in and their reminders stop, while the date you just
-    entered becomes the anchor for whatever comes next. You never write that sequencing down
-    anywhere. It falls out of the data, which is why a three-year protocol that branches on
-    what participants actually do still looks like a flat list of rules.
+    entered becomes the anchor for whatever comes next. That ordering is never written down anywhere; it comes out of the field references, which
+    is why a three-year protocol that branches on what participants actually do still looks
+    like a flat list of rules.
   </p>
 
   <div class="sublab" data-rev>the clock</div>
@@ -791,8 +786,7 @@ try{ if ('IntersectionObserver' in window &&
   <p data-rev>
     You can run it as often as you like. Every run rebuilds the grid off a fresh export and
     checks the ledger before it sends anything, so a spare invocation finds nothing to do and
-    exits. How often you call it comes down to how tight the timing has to be, and nothing
-    else.
+    exits. How often you call it comes down to how tight the timing has to be.
   </p>
 
   <div class="sublab" data-rev>what it plugs into</div>
@@ -870,7 +864,7 @@ try{ if ('IntersectionObserver' in window &&
   body: JSON.stringify({ content: body, from: FROM_NUMBER, to: [e164] }),
   signal: AbortSignal.timeout(<span class="s">30_000</span>),
 });</code></pre></div>
-      <div class="cwf"><b>Sending a text.</b> A single HTTP call, so any provider that exposes a send endpoint fits here.</div>
+      <div class="cwf"><b>Sending a text.</b> The send is one POST to the provider's messages endpoint, so any provider that exposes one fits here.</div>
     </div>
 
     <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
@@ -938,8 +932,7 @@ try{ if ('IntersectionObserver' in window &&
 
   <p data-rev>
     The grid itself is just a list of weekday and clock-time slots &mdash; Monday 8:10am,
-    Monday 1:45pm, and so on down. Every participant gets that same shape hung off their own
-    start date, so they are all doing the same protocol on their own calendar. Expanding it
+    Monday 1:45pm, and so on down. Every participant gets that same shape hung off their own start date. Expanding it
     gives you one row per prompt with that person's phone number and survey link already
     attached. In the picture above, how far a stem reaches tells you the time of day, and the
     shaded columns are the hours when nobody gets texted.
@@ -984,9 +977,7 @@ try{ if ('IntersectionObserver' in window &&
   <p data-rev>
     Two runs can overlap &mdash; one of them still sitting on a slot it is waiting out while
     the next invocation starts up &mdash; so a run has to claim a slot before it sends
-    anything, and only whichever run got the claim actually transmits. If a prompt misses its
-    window anyway, it gets logged as skipped. Sending it half an hour late would be worse than
-    not sending it at all.
+    anything, and only whichever run got the claim actually transmits. If a prompt misses its window anyway, it gets logged as skipped.
   </p>
   <p data-rev>
     In practice they land two to four seconds after the second they were scheduled for. That
