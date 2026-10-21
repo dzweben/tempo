@@ -119,6 +119,7 @@ code,pre{font-family:var(--mono)}
 .hero{padding:70px 0 58px;display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,436px);
   gap:54px;align-items:stretch}
 .heroL{display:flex;flex-direction:column;align-items:flex-start}
+.heroR{position:relative;min-height:430px}
 .tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.69rem;
   font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--teal);
   border:1px solid var(--line2);border-radius:99px;padding:5px 13px;margin-bottom:26px;
@@ -145,7 +146,7 @@ h1 svg{width:clamp(220px,24vw,272px);height:auto;display:block;color:var(--ink);
   box-shadow:0 0 22px -6px rgba(43,176,168,.6)}
 
 /* ---------- live terminal ---------- */
-.console{border:1px solid var(--line);border-radius:13px;background:
+.console{position:absolute;inset:0;border:1px solid var(--line);border-radius:13px;background:
   linear-gradient(180deg,rgba(10,26,20,.97),rgba(6,14,11,.97));
   box-shadow:0 26px 70px -32px #000,0 0 0 1px rgba(31,146,104,.12),
              0 0 60px -30px rgba(31,146,104,.5);overflow:hidden;display:flex;flex-direction:column;min-height:0}
@@ -161,7 +162,7 @@ h1 svg{width:clamp(220px,24vw,272px);height:auto;display:block;color:var(--ink);
   mask-image:linear-gradient(180deg,transparent 0,#000 18px)}
 .cbody::-webkit-scrollbar{width:7px}
 .cbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
-#lines{margin-top:auto}
+
 .ln{white-space:pre-wrap;word-break:break-word;margin:0;animation:fadein .18s ease-out}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .dim{color:var(--muted)} .vio{color:var(--grn-hot)} .cy{color:var(--teal)}
@@ -363,6 +364,8 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
 
 @media (max-width:880px){
   .hero{grid-template-columns:1fr;gap:34px;padding:52px 0 44px}
+    .heroR{position:static;min-height:0}
+  .console{position:static}
   .cbody{flex:none;height:268px;min-height:0}
   .hint{display:none}
   section{padding:58px 0}
@@ -546,25 +549,28 @@ try{ if ('IntersectionObserver' in window &&
       </svg></h1>
     <div class="sub" data-rev style="--d:120ms">tracking &middot; engagement &middot; messaging &middot; participant outreach</div>
     <p class="lede" data-rev style="--d:170ms">
-      Research studies that follow the same people for years have to keep contacting them:
-      a reminder before a visit, a survey to fill in afterwards, check-ins in between. Who
-      needs what, and when, depends on each person's own dates and on which forms they have
-      already completed. Studies keep all of that in a database like REDCap or Qualtrics.
+      <strong>TEMPO is a server that automates participant communication for long-running
+      research studies.</strong> It reads a study's REDCap or Qualtrics database, sends each
+      participant the visit reminders, survey invitations, follow-ups and timed prompts they
+      are due, and tracks what they have completed.
     </p>
     <p class="lede" data-rev style="--d:200ms">
-      <strong>TEMPO reads that database and runs the contacting.</strong> Visit reminders,
-      survey invitations and the follow-ups that chase them, prompts that have to arrive at an
-      exact minute, compensation notices. It also tracks the other direction: which forms each
-      participant has completed, where they are in their sequence, and what the study is still
-      waiting on.
+      Keeping up with that by hand is a daily job, and it fails quietly: a reminder nobody set,
+      a participant chased after they already responded, a timed prompt that arrives late and
+      produces data that still looks valid. Every decision TEMPO makes comes from the dates
+      and completion flags already in the study database, so the schedule stays correct as
+      those change.
     </p>
     <p class="lede sm" data-rev style="--d:240ms">
-      Texts go out through the study's own phone number, so a participant can just reply and the whole exchange sits in one thread a coordinator picks up. Anyone who texts STOP is silenced everywhere, automatically.
+      It is built for studies that run for months or years, where every participant is on their
+      own schedule and the messages need to be a conversation. Texts go through the study's
+      own phone number, so a participant can reply and the exchange sits in one thread a
+      coordinator picks up. Anyone who texts STOP is silenced everywhere, automatically.
     </p>
     <p class="lede sm" data-rev style="--d:260ms">
-      You set it up by writing rules against database fields. Fourteen days after the baseline visit, while that form is still incomplete. Completing
-      one survey can be what makes the next message due, which is enough to run a protocol
-      lasting years.
+      You configure it by writing rules against database fields: fourteen days after the
+      baseline visit, while that form is still incomplete. Completing one survey can be what
+      makes the next message due, which is enough to run a protocol lasting years.
     </p>
     <div class="cta" data-rev style="--d:270ms">
       <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -573,7 +579,8 @@ try{ if ('IntersectionObserver' in window &&
     </div>
   </div>
 
-  <div class="console" data-rev style="--d:200ms">
+  <div class="heroR" data-rev style="--d:200ms">
+  <div class="console">
     <div class="chead">
       <span class="ctitle">tempo &mdash; scheduler</span>
       <span class="clock" id="clk">--:--:--</span>
@@ -582,8 +589,9 @@ try{ if ('IntersectionObserver' in window &&
     <form class="cprompt" id="form" autocomplete="off">
       <span class="ps1">tempo</span><span class="ps2">&rsaquo;</span>
       <input id="in" placeholder="help" aria-label="Terminal command" spellcheck="false">
-      <span class="hint">try: queue &middot; ledger &middot; send</span>
+            <span class="hint">try: queue &middot; ledger &middot; send</span>
     </form>
+  </div>
   </div>
 </header>
 
@@ -1293,8 +1301,9 @@ $$('.cw').forEach(function(cw){
   function boot(){
     if (i < BOOT.length){ line(BOOT[i][0]); i++; setTimeout(boot, booted ? 0 : step); return; }
     try { sessionStorage.setItem('tempo-booted','1'); } catch(e){}
-    /* seed a full screen of history so the console never opens half-empty */
-    for (var n = 0; n < 17; n++) emit();
+    /* fill the visible window, whatever height the hero column came to */
+    var guard = 0;
+    while (out.scrollHeight <= out.clientHeight && guard++ < 90) emit();
     setTimeout(loop, 2600);
   }
 
