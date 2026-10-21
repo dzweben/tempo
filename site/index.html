@@ -546,25 +546,27 @@ try{ if ('IntersectionObserver' in window &&
       </svg></h1>
     <div class="sub" data-rev style="--d:120ms">tracking &middot; engagement &middot; messaging &middot; participant outreach</div>
     <p class="lede" data-rev style="--d:170ms">
-      <strong>TEMPO runs the outbound side of a longitudinal study.</strong> Not one reminder
-      &mdash; the whole programme: visit reminders, follow-up sequences that stop the moment
-      someone responds, momentary-assessment prompts timed to the minute, at-home tasks and
-      compensation notices.
+      <strong>TEMPO runs the outbound side of a longitudinal study.</strong> In a study that
+      goes on for years that adds up to a lot of messages. Reminders before each visit, the
+      questionnaires that open up afterwards, momentary-assessment prompts that have to land
+      on a particular minute, at-home task notices, compensation emails. Somebody has to work
+      out who is owed which of those today, and chase the people who have not answered without
+      also chasing the ones who have.
     </p>
     <p class="lede" data-rev style="--d:200ms">
-      Everything it needs is already in your REDCap or Qualtrics project. A
-      <strong>date field</strong> says when someone is due. A <strong>completion flag</strong>
-      says who has already answered, and so who should stop being chased. A
-      <strong>survey link</strong> says where to send them. TEMPO pulls all three through the
-      API on every run, keyed on record ID, and works out what each participant is owed at
-      that moment.
+      The information to do that is already sitting in REDCap or Qualtrics. The
+      <strong>date fields</strong> tell you when each person is due. The
+      <strong>completion flag</strong> on an instrument tells you who has filled it in, which
+      is also how you know who to stop chasing. And everyone has their own
+      <strong>survey link</strong>. TEMPO pulls all of that through the API on each run,
+      matches it up by record ID, and works out where everybody stands.
     </p>
     <p class="lede sm" data-rev style="--d:240ms">
-      Because the trigger is a <strong>field</strong> rather than a calendar, nothing is
-      special-cased. Any event that records something happened &mdash; a visit logged, an
-      instrument marked complete, a date entered &mdash; can set off whatever the protocol
-      says follows it, a week or three years later. That is enough to automate an entire
-      longitudinal study, not just its prompts.
+      What takes this past reminders is that the thing being watched is a
+      <strong>field</strong>. Logging a visit is a field changing. Marking an instrument
+      complete is a field changing. So one message finishing can be what makes the next one
+      due, and you can describe a protocol that runs for three years and branches on what
+      people actually do.
     </p>
     <div class="cta" data-rev style="--d:270ms">
       <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -593,9 +595,10 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">How it works</div><h2>From a date field to a sent message</h2></div>
   </div>
   <p class="intro" data-rev>
-    A study already knows when things ought to happen: a consent date, a baseline visit, a form
-    nobody has filled in yet. TEMPO turns that into a dated list of messages and works through
-    it. Every step below runs from scratch on every invocation.
+    The study database already knows when things ought to happen. There is a consent date in
+    there, a baseline visit, a form nobody has filled in yet. TEMPO turns all of that into a
+    dated list of messages and works through it. The five steps below happen start to finish
+    on every run &mdash; nothing is kept warm in between.
   </p>
 
   <div class="arch" data-rev>
@@ -728,61 +731,68 @@ try{ if ('IntersectionObserver' in window &&
   </div>
 
   <div class="flow" data-rev>
-    <div class="fstep"><b><i>01</i> pull</b><span>A data export through the REDCap or Qualtrics API, fetched per event and keyed on <code>record_id</code>, then pivoted into one row per participant: their date fields, the completion flag on every instrument, and their contact fields.</span><span class="arw">&rsaquo;</span></div>
-    <div class="fstep"><b><i>02</i> expand</b><span>Each declared rule is resolved against that row. <code>[event][field]</code> references are substituted per participant, survey URLs are fetched for the instruments involved, and the anchor arithmetic yields one dated row per participant per occurrence.</span><span class="arw">&rsaquo;</span></div>
-    <div class="fstep"><b><i>03</i> select</b><span>Filter that grid to rows timestamped inside this run's window whose condition still evaluates against the current completion flags &mdash; less opt-outs, quiet hours, unresolved links, and anything already in the ledger.</span><span class="arw">&rsaquo;</span></div>
-    <div class="fstep"><b><i>04</i> send</b><span>Claim the row, then POST it to the messaging provider or hand it to SMTP, with merge fields and the participant's own survey URL rendered into the body.</span><span class="arw">&rsaquo;</span></div>
-    <div class="fstep"><b><i>05</i> record</b><span>Append <code>pid | alert | timestamp | channel | recipient</code> to the ledger, so no later run can match the same row twice.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>01</i> pull</b><span>Export the study out of REDCap or Qualtrics over the API, one call per event, and stitch it together on <code>record_id</code> so you end up with a single row per participant holding their dates, the completion flag on each instrument, and their contact details.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>02</i> expand</b><span>Run every rule against that row. Fill in the <code>[event][field]</code> references with that person's values, fetch the survey URLs the message needs, do the date arithmetic, and you get one dated line per participant for each time the message is owed.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>03</i> select</b><span>Narrow that down to the lines falling in this run's window, and check each one's condition against the completion flags as they stand right now. Drop anyone who opted out, anything inside quiet hours, anything whose link did not resolve, and anything the ledger says already went.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>04</i> send</b><span>Claim the line so nothing else can take it, render the body with that person's details and survey URL in it, and POST it to the messaging provider or hand it to SMTP.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>05</i> record</b><span>Write <code>pid | alert | timestamp | channel | recipient</code> to the ledger. That line is what every later run checks against, which is how the same message never goes out twice.</span><span class="arw">&rsaquo;</span></div>
   </div>
 
   <div class="sublab" data-rev>the grid</div>
   <p data-rev>
-    A message is declared once, as a rule rather than a date: fourteen days after the baseline
-    visit, repeating weekly, at most three times, only while the form is still incomplete. On
-    each run those rules are crossed against the current roster to produce one row per
-    participant per occurrence, each carrying a resolved timestamp, a destination and a rendered
-    body. That grid is the entire schedule for the study.
+    You never write down a date. You write down the rule that produces one: fourteen days
+    after the baseline visit, then every week after that, up to three times, and only while
+    the form is still sitting incomplete. On each run TEMPO takes those rules, runs them
+    against whoever is currently on the roster, and gets back one line per person per time
+    the message is owed &mdash; each with a real timestamp, somewhere to send it, and a body
+    already filled in. Put together, that is the entire schedule for the study.
   </p>
   <p data-rev>
-    It is rebuilt from scratch every time. Nothing persists between runs except the record of
-    what has already gone out, so correcting a date in the survey platform corrects every
-    message hanging off it &mdash; there is no queue to migrate and no stale copy to reconcile.
-    Selecting what to send now is then just a filter over that grid: the rows due inside this
-    run's window whose conditions still hold &mdash; form still incomplete, participant not
-    opted out, not quiet hours, survey link resolved, nothing matching in the ledger.
+    It gets thrown away and rebuilt every run. The only thing that survives in between is the
+    record of what already went out. That sounds wasteful, and it is the most useful property
+    the thing has: when a coordinator fixes a wrong visit date in REDCap, every message
+    hanging off that date is simply correct on the next run. Nothing is holding the old
+    answer, so there is nothing to go and reconcile.
+  </p>
+  <p data-rev>
+    Once you have the grid, working out what to send is just filtering it. Take the lines due
+    in this run's window, keep the ones whose condition still holds against the completion
+    flags as they stand now, and drop anyone who opted out, anything inside quiet hours,
+    anything whose survey link did not resolve, and anything already in the ledger.
   </p>
 
   <div class="sublab" data-rev>what counts as a trigger</div>
   <p data-rev>
-    Both halves of a rule &mdash; the condition that decides whether a message is owed, and the
-    anchor its timing is measured from &mdash; are references to fields in the study database,
-    written as <code>[event][field]</code>. Nothing about a message type is special-cased in
-    the code. A condition is just a field not yet equal to <em>complete</em>; an anchor is just
-    a date field on some event.
+    A rule has two parts and both of them point at the study database. The condition that
+    decides whether the message is owed is a field reference, written
+    <code>[event][field]</code>. So is the date its timing hangs off. There is no list of
+    message types anywhere in the code, and no special handling for EMA or for visit
+    reminders. A condition is a field that is not marked complete yet. An anchor is a date
+    field on some event. That is the whole vocabulary.
   </p>
   <p data-rev>
-    That is what makes this more than a prompt scheduler. Because completing one instrument
-    changes a field, and a field change is what another rule is waiting on, schedules chain:
-    logging a visit opens the questionnaires that hang off that visit, marking those complete
-    stops their reminders and arms the next arm's anchor. A protocol that runs three years and
-    branches on what participants actually do is expressible as a flat list of rules, because
-    the sequencing lives in the data rather than in the schedule.
+    Which means schedules chain on their own. Completing an instrument changes a field, and
+    some other rule is sitting there watching that field. Log a visit and the questionnaires
+    hanging off it come due. Fill those in and their reminders stop, while the date you just
+    entered becomes the anchor for whatever comes next. You never write that sequencing down
+    anywhere. It falls out of the data, which is why a three-year protocol that branches on
+    what participants actually do still looks like a flat list of rules.
   </p>
 
   <div class="sublab" data-rev>the clock</div>
   <p data-rev>
-    Nothing runs continuously. A cron schedule invokes the pipeline, and the only real
-    requirement is that the runs are frequent enough that every slot falls inside one of them.
-    A reminder due at 5pm needs a run at 5pm. An EMA prompt that has to land on a particular
-    minute needs runs that overlap its slot, because schedulers are not punctual: the run picks
-    the slot up a little early and waits in-process until the exact second rather than trusting
-    the cron tick to be on time.
+    There is no daemon sitting there waiting. Cron calls the thing, and the only real
+    requirement is that it calls often enough that no slot falls through a gap between runs.
+    A reminder due at 5pm is covered by a run at 5pm. An EMA prompt that has to land at 8:10
+    needs runs overlapping that slot, because cron will not fire you at 8:10:00 and there is
+    no point pretending it will. The run picks the slot up early and then sits there until
+    the second comes around.
   </p>
   <p data-rev>
-    Running more often is safe. Each run recomputes the grid from the current export and checks
-    the ledger before transmitting, so a spare invocation simply finds nothing to do. The
-    cadence is therefore set by how precise the timing has to be, not by the risk of running
-    too often.
+    You can run it as often as you like. Every run rebuilds the grid off a fresh export and
+    checks the ledger before it sends anything, so a spare invocation finds nothing to do and
+    exits. How often you call it comes down to how tight the timing has to be, and nothing
+    else.
   </p>
 
   <div class="sublab" data-rev>what it plugs into</div>
@@ -875,8 +885,8 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="sublab" data-rev>not sending it twice</div>
   <p data-rev>
-    A message that has gone out cannot be recalled, so at-most-once is enforced in three
-    independent ways.
+    You cannot unsend a text message. Three separate things have to fail before the same one
+    goes out twice.
   </p>
   <div class="tw" data-rev>
   <table>
@@ -887,9 +897,12 @@ try{ if ('IntersectionObserver' in window &&
   </table>
   </div>
   <p data-rev>
-    Other guards: quiet hours, an opt-out list checked at queue time and again at send time,
-    a per-run cap, no send if the survey link did not resolve, dry-run by default, and a kill
-    switch that takes effect without a redeploy.
+    There are other guards around it. Nothing transmits outside the daily window. The opt-out
+    list is checked when the queue is built and checked again right before sending, because
+    somebody can opt out in between. A cap limits how much any one run can send, so a bad
+    rule cannot blast the whole roster. A message whose survey link did not resolve is held
+    back instead of going out broken. Dry-run is the default, and there is a switch that puts
+    everything back into dry-run without waiting on a deploy.
   </p>
 </section>
 
@@ -899,8 +912,10 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">Momentary assessment</div><h2>Prompts on the minute</h2></div>
   </div>
   <p class="intro" data-rev>
-    EMA prompts ask what someone is doing at the time they are asked, so they have to arrive
-    at the scheduled minute to be usable.
+    An EMA prompt asks what someone is doing right now. That only works if it turns up when
+    it was meant to. A prompt that lands forty minutes late is asking about a different part
+    of someone's day, and the answer it gets back looks exactly like a good one in the
+    dataset.
   </p>
 
   <div class="sched" data-rev id="sched">
@@ -922,9 +937,12 @@ try{ if ('IntersectionObserver' in window &&
   </div>
 
   <p data-rev>
-    A sampling grid is a set of fixed weekday and clock-time slots. It gets anchored to each
-    participant's start date and expanded into dated rows, each carrying their phone number
-    and survey link. Stem height above is the time of day; the shaded columns are quiet hours.
+    The grid itself is just a list of weekday and clock-time slots &mdash; Monday 8:10am,
+    Monday 1:45pm, and so on down. Every participant gets that same shape hung off their own
+    start date, so they are all doing the same protocol on their own calendar. Expanding it
+    gives you one row per prompt with that person's phone number and survey link already
+    attached. In the picture above, how far a stem reaches tells you the time of day, and the
+    shaded columns are the hours when nobody gets texted.
   </p>
 
   <div class="cw" data-rev id="cw2">
@@ -949,7 +967,7 @@ try{ if ('IntersectionObserver' in window &&
     surveyLink: <span class="k">await</span> resolveLink(participant, slot.form),
   });
 }</code></pre></div>
-      <div class="cwf"><b>Expanding the grid.</b> Slots are fixed by weekday and clock time, then anchored to each participant's own start date.</div>
+      <div class="cwf"><b>Expanding the grid.</b> The same weekday-and-clock-time slots for everyone, hung off whatever date that particular participant started on.</div>
     </div>
     <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
 <span class="k">const</span> waitMs = slot.sendAt - Date.now();
@@ -959,14 +977,21 @@ try{ if ('IntersectionObserver' in window &&
   <span class="k">await</span> sendSMS(slot.phone, render(slot));
   <span class="k">await</span> ledger.append({ ...slot, status: <span class="s">"sent"</span>, latencySec: <span class="s">2</span> });
 }</code></pre></div>
-      <div class="cwf"><b>Waiting out the remainder.</b> Schedulers are not punctual, so the sender runs on a coarse clock, picks up any slot inside its look-ahead window, and waits in-process until the exact second.</div>
+      <div class="cwf"><b>Waiting out the remainder.</b> Cron will not fire you at 8:10:00 exactly, so the sender does not try to make it. It wakes up on a coarse clock, grabs anything coming up soon, and then just sits there until the second arrives.</div>
     </div>
   </div>
 
   <p data-rev>
-    It claims the slot before transmitting, so two overlapping runs cannot both send. Past the
-    grace window a prompt is recorded as skipped rather than sent late. Measured latency in
-    production is 2&ndash;4 seconds past the scheduled second, written to the ledger per message.
+    Two runs can overlap &mdash; one of them still sitting on a slot it is waiting out while
+    the next invocation starts up &mdash; so a run has to claim a slot before it sends
+    anything, and only whichever run got the claim actually transmits. If a prompt misses its
+    window anyway, it gets logged as skipped. Sending it half an hour late would be worse than
+    not sending it at all.
+  </p>
+  <p data-rev>
+    In practice they land two to four seconds after the second they were scheduled for. That
+    number goes in the ledger next to every message, so if it ever starts drifting you can
+    see it happening.
   </p>
 </section>
 
@@ -976,8 +1001,9 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">The server</div><h2>The dashboard</h2></div>
   </div>
   <p class="intro" data-rev>
-    The dashboard shows what is scheduled, what has already gone out, and how far each
-    participant has got through their own sequence. Screens below run on synthetic data.
+    Most of the time a coordinator wants to know one of two things: what is going out this
+    week, or where participant 1042 has got to. The dashboard answers both off the same files
+    the senders write. The screens below are running on made-up data.
   </p>
 
   <div class="shw" data-rev>
