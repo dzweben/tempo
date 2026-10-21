@@ -6,15 +6,26 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22925367.svg)](https://doi.org/10.5281/zenodo.22925367)
 
-TEMPO is a scheduling and tracking layer that sits on top of a study's survey platform. It
-reads participants out of REDCap or Qualtrics, works out who is due to get something, sends
-it by text or email, logs what went out, and shows completion status on a dashboard.
+Research studies that follow the same people for years have to keep contacting them: a
+reminder before a visit, a survey to fill in afterwards, check-ins in between. Who needs
+what, and when, depends on each person's own dates and on which forms they have already
+completed. Studies keep all of that in a database like REDCap or Qualtrics.
 
-It handles four things: messages scheduled off each participant's own dates,
-momentary-assessment prompts that have to go at an exact minute, completion tracking across
-instruments and study phases, and a nightly check that what was supposed to send actually
-sent. It runs the participant communication for NIH-funded longitudinal research, covering
-several hundred participants.
+TEMPO reads that database and runs the contacting. Visit reminders, survey invitations and
+the follow-ups that chase them, prompts that have to arrive at an exact minute, compensation
+notices. It also tracks the other direction: which forms each participant has completed,
+where they are in their sequence, and what the study is still waiting on.
+
+Texts go out through the study's own phone number, so a participant can just reply and the
+whole exchange sits in one thread a coordinator picks up. Anyone who texts STOP is silenced
+everywhere, automatically.
+
+You set it up by writing rules against database fields. Fourteen days after the baseline
+visit, while that form is still incomplete. Completing one survey can be what makes the next
+message due, which is enough to run a protocol lasting years.
+
+It runs the participant communication for NIH-funded longitudinal research, covering several
+hundred participants.
 
 This repository is published as a record of how that system works. It is not
 software you can install, and there is no quickstart here, because there is no
@@ -49,8 +60,7 @@ reports the state from one pass over the same records.
 - **Visit, at-home and compensation notices,** each with their own timing,
   conditions and expiry.
 - **Per-participant survey links,** fetched from the survey platform at send
-  time, so a message whose link did not resolve gets held back instead of going
-  out broken.
+  time, so a message whose link did not resolve is held back and a broken link never reaches anyone.
 - **A dashboard and a nightly reconciliation.** What is scheduled, what went
   out, how far each participant has got through their own sequence, and an
   overnight check of planned against actual so a missed message turns up the
@@ -80,8 +90,7 @@ Every run does the same five things, start to finish.
 
 ### The grid
 
-You write a rule instead of a date: fourteen days after the baseline visit, repeating
-weekly, up to three times, while the form is still incomplete. Each run evaluates those rules
+A rule produces the date. Fourteen days after the baseline visit, repeating weekly, up to three times, while the form is still incomplete. Each run evaluates those rules
 against the current roster and produces one row per participant for each time a message is
 due, with the timestamp, the destination and the message body already filled in. Those rows
 are the whole schedule for the study.
@@ -183,7 +192,7 @@ everything you need to know about the design is in this file and on
 ## What is in this repository
 
 Source files only. Study-specific identifiers were replaced with placeholders,
-the schedule ships as a synthetic example instead of a real protocol, and no
+the schedule ships as a synthetic example, and no
 participant data or credentials have ever been committed here. The dashboard
 screenshots on the site are generated from made-up records. The reference CI
 workflows under `examples/` come from a production deployment and are meant to be
