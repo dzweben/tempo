@@ -6,21 +6,23 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22925367.svg)](https://doi.org/10.5281/zenodo.22925367)
 
-Research studies that follow the same people for years have to keep contacting them: a
-reminder before a visit, a survey to fill in afterwards, check-ins in between. Who needs
-what, and when, depends on each person's own dates and on which forms they have already
-completed. Studies keep all of that in a database like REDCap or Qualtrics.
+TEMPO is a server that automates participant communication for long-running research
+studies. It reads a study's REDCap or Qualtrics database, sends each participant the visit
+reminders, survey invitations, follow-ups and timed prompts they are due, and tracks what
+they have completed.
 
-TEMPO reads that database and runs the contacting. Visit reminders, survey invitations and
-the follow-ups that chase them, prompts that have to arrive at an exact minute, compensation
-notices. It also tracks the other direction: which forms each participant has completed,
-where they are in their sequence, and what the study is still waiting on.
+Keeping up with that by hand is a daily job, and it fails quietly: a reminder nobody set, a
+participant chased after they already responded, a timed prompt that arrives late and
+produces data that still looks valid. Every decision TEMPO makes comes from the dates and
+completion flags already in the study database, so the schedule stays correct as those
+change.
 
-Texts go out through the study's own phone number, so a participant can just reply and the
-whole exchange sits in one thread a coordinator picks up. Anyone who texts STOP is silenced
-everywhere, automatically.
+It is built for studies that run for months or years, where every participant is on their own
+schedule and the messages need to be a conversation. Texts go through the study's own phone
+number, so a participant can reply and the exchange sits in one thread a coordinator picks
+up. Anyone who texts STOP is silenced everywhere, automatically.
 
-You set it up by writing rules against database fields. Fourteen days after the baseline
+You configure it by writing rules against database fields: fourteen days after the baseline
 visit, while that form is still incomplete. Completing one survey can be what makes the next
 message due, which is enough to run a protocol lasting years.
 
