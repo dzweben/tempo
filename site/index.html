@@ -546,25 +546,25 @@ try{ if ('IntersectionObserver' in window &&
       </svg></h1>
     <div class="sub" data-rev style="--d:120ms">tracking &middot; engagement &middot; messaging &middot; participant outreach</div>
     <p class="lede" data-rev style="--d:170ms">
-      <strong>TEMPO is a scheduling and tracking layer that sits on top of your survey
-      platform.</strong> It reads participants out of REDCap or Qualtrics, works out who is
-      due to get something, sends it by text or email, logs what went out, and shows you
-      completion status on a dashboard.
+      Research studies that follow the same people for years have to keep contacting them:
+      a reminder before a visit, a survey to fill in afterwards, check-ins in between. Who
+      needs what, and when, depends on each person's own dates and on which forms they have
+      already completed. Studies keep all of that in a database like REDCap or Qualtrics.
     </p>
     <p class="lede" data-rev style="--d:200ms">
-      It handles four things: messages scheduled off each participant's own dates,
-      momentary-assessment prompts that have to go at an exact minute, completion tracking
-      across instruments and study phases, and a nightly check that what was supposed to send
-      actually sent. All of that comes from three things your survey platform already holds:
-      the <strong>date fields</strong>, the <strong>completion flag</strong> on each
-      instrument, and each participant's <strong>survey link</strong>. TEMPO reads them
-      through the API on every run and joins them on record ID.
+      <strong>TEMPO reads that database and runs the contacting.</strong> Visit reminders,
+      survey invitations and the follow-ups that chase them, prompts that have to arrive at an
+      exact minute, compensation notices. It also tracks the other direction: which forms each
+      participant has completed, where they are in their sequence, and what the study is still
+      waiting on.
     </p>
     <p class="lede sm" data-rev style="--d:240ms">
-      You schedule messages by writing rules against those <strong>fields</strong> instead of
-      picking dates. A rule's condition is a field, and so is the date it counts from, which
-      means finishing one instrument can be what makes the next message due. The same setup
-      handles a reminder next Tuesday and a branch that opens three years in.
+      Texts go out through the study's own phone number, so a participant can just reply and the whole exchange sits in one thread a coordinator picks up. Anyone who texts STOP is silenced everywhere, automatically.
+    </p>
+    <p class="lede sm" data-rev style="--d:260ms">
+      You set it up by writing rules against database fields. Fourteen days after the baseline visit, while that form is still incomplete. Completing
+      one survey can be what makes the next message due, which is enough to run a protocol
+      lasting years.
     </p>
     <div class="cta" data-rev style="--d:270ms">
       <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -736,8 +736,7 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="sublab" data-rev>the grid</div>
   <p data-rev>
-    You write a rule instead of a date: fourteen days after the baseline visit, repeating
-    weekly, up to three times, while the form is still incomplete. Each run evaluates those
+    A rule produces the date. Fourteen days after the baseline visit, repeating weekly, up to three times, while the form is still incomplete. Each run evaluates those
     rules against the current roster and produces one row per participant for each time a
     message is due, with the timestamp, the destination and the message body already filled
     in. Those rows are the whole schedule for the study.
@@ -892,8 +891,7 @@ try{ if ('IntersectionObserver' in window &&
     There are other guards around it. Nothing transmits outside the daily window. The opt-out
     list is checked when the queue is built and checked again right before sending, because
     somebody can opt out in between. A cap limits how much any one run can send, so a bad
-    rule cannot blast the whole roster. A message whose survey link did not resolve is held
-    back instead of going out broken. Dry-run is the default, and there is a switch that puts
+    rule cannot blast the whole roster. A message whose survey link did not resolve is held back, so a broken link never reaches anyone. Dry-run is the default, and there is a switch that puts
     everything back into dry-run without waiting on a deploy.
   </p>
 </section>
