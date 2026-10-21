@@ -6,171 +6,202 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22925367.svg)](https://doi.org/10.5281/zenodo.22925367)
 
-TEMPO sends scheduled messages to study participants. It reads a study's roster,
-date fields and per-form completion flags out of a survey platform, works out
-which participants are owed a message and when, sends it by SMS or email, and
-records every send.
+TEMPO runs the outbound side of a longitudinal study. It reads a study out of
+REDCap or Qualtrics, works out who is owed a message today, sends it by text or
+email, and keeps a record of everything it sent.
 
-It runs the participant outreach for NIH-funded longitudinal research — visit
-reminders, follow-up sequences, momentary-assessment prompts and compensation
-notices, to several hundred participants.
+It does that for NIH-funded longitudinal research, covering visit reminders,
+the questionnaires that open up after a visit, momentary-assessment prompts that
+have to land on a particular minute, at-home task notices and compensation
+emails, for several hundred participants.
 
-**This repository is published as a record of how that system works, not as
-software you can install.** There is no quickstart, because there is no honest
-version of one — see [Running this for a real study](#running-this-for-a-real-study).
+This repository is published as a record of how that system works. It is not
+software you can install, and there is no quickstart here, because there is no
+honest version of one to write. [Running this for a real
+study](#running-this-for-a-real-study) explains why.
 
 ---
 
 ## The problem
 
-In a longitudinal study, almost everything that goes out to a participant is a
-function of a date that already exists somewhere in the survey database. Consent
-on the 4th, so the baseline questionnaire opens on the 11th. Visit on the 3rd, so
-the between-visit survey goes out a week later and again a week after that, unless
-they have already filled it in. Enrolled in the momentary-assessment arm, so
-twenty-five prompts across the next ten days, each at a particular minute.
+Almost everything a study sends to a participant is decided by a date that is
+already sitting in the study database. Someone consents on the 4th, so their
+baseline questionnaire opens on the 11th. They come in for a visit on the 3rd, so
+the between-visit survey goes out a week later, and again the week after that
+unless they have already filled it in. They are in the momentary-assessment arm,
+so they get twenty-five prompts over the next ten days and each one has to arrive
+at a specific minute.
 
-Done by hand this is somebody's job, every day, for years. Done with calendar
-reminders it fails quietly: the reminder that was never set, the participant who
-responded but got chased anyway, the prompt sent at 9:14 instead of 9:10 and
-therefore measuring a different moment. By the time anyone notices, the window
-has closed and the data is gone.
+In a study that runs for years, keeping on top of that is somebody's actual job,
+every day. Doing it from a calendar instead goes wrong quietly. A reminder never
+gets set. Someone who already responded gets chased anyway, which is the kind of
+thing that makes people drop out. A prompt goes at 9:14 instead of 9:10, and the
+answer it gets back sits in the dataset looking exactly like a good one. By the
+time anybody notices, the window has closed and the data is gone.
 
-The dates are already in the survey platform. The messaging providers already
-send texts and email. TEMPO is the part in between that connects them and keeps
-a record.
+The dates are already in the survey platform, and the messaging providers already
+send texts and email. TEMPO connects the two and keeps a record of what it sent.
 
 ## What it handles
 
-- **Reminders and sequences anchored to each participant's own dates** —
-  follow-ups that stop queueing the moment the form is marked complete, so
-  people who have responded are not chased.
-- **Momentary assessment (EMA/ESM)** — a fixed grid of weekday and clock-time
-  slots, anchored per participant, delivered on the scheduled minute. Past a
-  grace window a prompt is recorded as a protocol skip rather than sent late.
-- **Recurring cycles** — monthly or weekly waves computed from one anchor date
+- **Reminders and sequences hung off each participant's own dates.** Follow-ups
+  stop queueing the moment the form is marked complete, so people who have
+  already answered stop hearing from you.
+- **Momentary assessment (EMA/ESM).** A fixed set of weekday and clock-time
+  slots, anchored to each participant's start date, delivered on the minute. If
+  a prompt misses its window it gets logged as skipped.
+- **Recurring cycles.** Monthly or weekly waves computed from one anchor date
   each, with their own invite and follow-up cadence.
-- **Visit, at-home and compensation notices** — each with their own timing,
+- **Visit, at-home and compensation notices,** each with their own timing,
   conditions and expiry.
-- **Per-participant survey links** — resolved from the survey platform at send
-  time, so a message whose link does not resolve is never sent with a broken one.
-- **A dashboard and a daily reconciliation** — what is scheduled, what went out,
-  how far each participant has got through their own sequence, and a nightly
-  check of planned against actual that surfaces a missed message the next
-  morning rather than at the end of the study.
+- **Per-participant survey links,** fetched from the survey platform at send
+  time, so a message whose link did not resolve gets held back instead of going
+  out broken.
+- **A dashboard and a nightly reconciliation.** What is scheduled, what went
+  out, how far each participant has got through their own sequence, and an
+  overnight check of planned against actual so a missed message turns up the
+  next morning.
 
 ## How it works
 
-Every run does the same five things, from scratch.
+Every run does the same five things, start to finish.
 
-1. **Pull.** Export the current state of the study: the roster, the date fields
-   each schedule hangs off, the completion flag on every form, and each
-   participant's own survey link.
-2. **Expand.** Each message is declared once as a rule rather than a date —
-   *fourteen days after the baseline visit, repeating weekly, at most three
-   times, only while the form is still incomplete.* Those rules are crossed
-   against the roster to produce one row per participant per occurrence, each
-   carrying a resolved timestamp, a destination and a rendered body. That grid
-   is the entire schedule for the study.
-3. **Select.** Take the rows whose timestamp falls inside this run's window and
-   whose conditions still hold: form still incomplete, participant not opted
-   out, not quiet hours, survey link resolved, and nothing matching already in
-   the record of what has been sent.
-4. **Send.** Claim the row, then transmit by SMS or email.
-5. **Record.** Append to the log, so no later run can send the same row again.
+1. **Pull.** Export the study over the REDCap or Qualtrics API, one call per
+   event, and stitch it together on `record_id` so you end up with a single row
+   per participant holding their dates, the completion flag on each instrument,
+   and their contact details.
+2. **Expand.** Run every rule against that row. Fill in the `[event][field]`
+   references with that person's values, fetch the survey URLs the message
+   needs, do the date arithmetic, and you get one dated line per participant for
+   each time the message is owed.
+3. **Select.** Narrow that to the lines falling in this run's window, and check
+   each one's condition against the completion flags as they stand right now.
+   Drop anyone who opted out, anything inside quiet hours, anything whose link
+   did not resolve, and anything the ledger says already went.
+4. **Send.** Claim the line so nothing else can take it, render the body with
+   that person's details and survey URL in it, and hand it to the messaging
+   provider or to SMTP.
+5. **Record.** Write the send to the ledger. That line is what every later run
+   checks against, which is how the same message never goes out twice.
 
-The grid is rebuilt every time. Nothing persists between runs except the record
-of what has already gone out, so correcting a date in the survey platform
-corrects every message that hangs off it — there is no queue to migrate and no
-second copy to reconcile.
+### The grid
+
+You never have to write a date down. You write the rule that produces one:
+fourteen days after the baseline visit, then every week after that, up to three
+times, and only while the form is still sitting incomplete. On each run TEMPO
+takes those rules, runs them against whoever is currently on the roster, and gets
+back one line per person for each time a message is owed, with a real timestamp,
+somewhere to send it, and a body already filled in. Together those lines are the
+whole schedule for the study.
+
+The grid gets thrown away and rebuilt every run, and the only thing that survives
+in between is the record of what already went out. Rebuilding from scratch is
+what makes a correction cheap: when a coordinator fixes a wrong visit date in
+REDCap, every message hanging off that date is simply correct on the next run.
+
+### What counts as a trigger
+
+A rule has two parts and both of them point at the study database. The condition
+that decides whether a message is owed is a field reference, written
+`[event][field]`, and so is the date its timing hangs off. There is no list of
+message types anywhere in the code, and no special handling for momentary
+assessment or for visit reminders. A condition is a field that is not marked
+complete yet. An anchor is a date field on some event.
+
+Which means schedules chain on their own. Logging a visit and marking an
+instrument complete are both just a field changing, and some other rule is
+sitting there watching that field. Log a visit and the questionnaires hanging off
+it come due. Fill those in and their reminders stop, while the date you just
+entered becomes the anchor for whatever comes next. That ordering is never
+written down anywhere; it comes out of the field references, which is why a
+three-year protocol that branches on what participants actually do still looks
+like a flat list of rules.
 
 ### The clock
 
-Nothing runs continuously. A cron schedule invokes the pipeline, and the only
-real requirement is that the runs are frequent enough that every slot falls
-inside one of them.
+There is no daemon sitting there waiting. Cron calls the thing, and the only real
+requirement is that it calls often enough that no slot falls through a gap
+between runs. A reminder due at 5pm is covered by a run at 5pm. A prompt that has
+to land at 8:10 needs runs overlapping that slot, because cron will not fire you
+at 8:10:00 and there is no point pretending it will. The run picks the slot up
+early and then sits there until the second comes around. In practice prompts land
+two to four seconds after the second they were scheduled for, and that number
+goes in the ledger next to every message, so if it ever starts drifting you can
+see it happening.
 
-A reminder due at 5pm needs a run at 5pm. A momentary-assessment prompt that has
-to land on a particular minute needs runs that overlap its slot, because
-schedulers are not punctual — the run picks the slot up a little early and waits
-inside the invocation until the exact second rather than trusting the cron tick
-to be on time. Measured delivery in production is two to four seconds past the
-scheduled second, written to the log for every message.
-
-Running more often is safe. Each run recomputes the grid from the current export
-and checks the record before transmitting, so a spare invocation simply finds
-nothing to do. The cadence is set by how precise the timing has to be, not by
-any risk of running too often.
+You can run it as often as you like. Every run rebuilds the grid off a fresh
+export and checks the ledger before it sends anything, so a spare invocation
+finds nothing to do and exits. How often you call it comes down to how tight the
+timing has to be.
 
 ## Not sending the same thing twice
 
-A message that has gone out cannot be recalled, and the participants are real
-people — many of them minors. A double-send or a 3am text is a protocol problem,
-not a bug report. So at-most-once is enforced three independent ways:
+You cannot unsend a text message, and many of the participants are minors. A
+double-send or a text at 3am is a protocol violation. Three separate things have
+to fail before the same message goes out twice.
 
-- **A written record.** Every send is appended to a log keyed by participant,
-  message, time, channel and recipient. Any later run checks that log first, so
-  a retry, an overlapping schedule or a replayed job finds the message already
-  accounted for and does nothing.
-- **Claiming before sending.** A run claims a slot before it transmits. If two
-  runs reach the same slot at once, only one of them wins the claim.
-- **Asking the provider.** Before anything is sent late or recovered, the system
-  asks the messaging provider whether that message already reached that person.
-  The provider's own history settles it — which covers the one case the log
-  cannot, where the message went out but the record of it was lost.
+- **The ledger.** Every send gets appended to a log keyed by participant,
+  message, time, channel and recipient. Any later run checks that log before it
+  does anything, so a retry, an overlapping schedule or a replayed job finds the
+  message already accounted for and stops.
+- **Claiming.** A run claims a slot before it transmits. If two runs reach the
+  same slot at once, only one of them gets the claim and only that one sends.
+- **Asking the provider.** Before anything goes out late or gets recovered, the
+  system asks the messaging provider whether that message already reached that
+  person. That covers the one case the ledger cannot: the message went out but
+  the record of it was lost.
 
-Alongside those: a daily quiet-hours window nothing transmits outside of, an
-opt-out list checked when the queue is built and again at send time, a cap on
-how many messages one run may send, a bounded window past which a late message
-is skipped rather than delivered, dry-run as the default, and a switch that puts
-the whole system into dry-run without a redeploy.
+There are other guards around it. Nothing transmits outside the daily window. The
+opt-out list is checked when the queue is built and checked again right before
+sending, because somebody can opt out in between. A cap limits how much any one
+run can send, so a bad rule cannot blast the whole roster. Dry-run is the
+default, and there is a switch that puts everything back into dry-run without
+waiting on a deploy.
 
 ## What a system like this needs
 
 | | |
 |---|---|
 | **Survey platform** | A record export, date fields, per-form completion flags, and a per-participant survey link. The build here uses REDCap. |
-| **SMS provider** | A send endpoint, and ideally a message-history endpoint to arbitrate against duplicates. The build here uses OpenPhone. |
+| **SMS provider** | A send endpoint, and ideally a message-history endpoint so you can check whether something already arrived. The build here uses OpenPhone. |
 | **Email** | SMTP credentials, or any HTTP send API. The build here uses Gmail SMTP. |
-| **A scheduler** | Anything that can call a URL on a schedule — cron, a platform cron trigger, a CI timer. |
-| **Somewhere to put two things** | The rebuilt grid, and the append-only record of what was sent. The reference implementation keeps both as JSON in an access-controlled store; object storage, a database or an encrypted volume work the same way. |
+| **A scheduler** | Anything that can call a URL on a schedule: cron, a platform cron trigger, a CI timer. |
+| **Somewhere to put two things** | The rebuilt grid, and the append-only record of what was sent. The reference implementation keeps both as JSON in an access-controlled store; object storage, a database or an encrypted volume all work. |
 
-The survey platform stays the single source of truth throughout. TEMPO holds as
-little as it can about a participant — a record identifier and a way to contact
-them. See [SECURITY.md](SECURITY.md) for what that means in practice.
+The survey platform stays the source of truth the whole way through. TEMPO holds
+as little as it can about a participant, which comes down to a record identifier
+and a way to contact them. [SECURITY.md](SECURITY.md) covers what that means in
+practice.
 
-Built with Next.js, React, TypeScript and Tailwind for the dashboard, and Node
-scripts for the pipeline and senders.
+The dashboard is Next.js, React, TypeScript and Tailwind. The pipeline and the
+senders are Node scripts.
 
 ## Running this for a real study
 
 Realistically, you cannot take this repository and run it for your own study
-without me, and I would rather say so than imply otherwise.
+without me.
 
-Sending to participants means holding their contact information and holding API
-credentials for the survey platform that contains their data. Both of those are
-governed by your protocol, not by a licence file. In practice that means I would
-need to be named on your IRB to have the access required to set it up and keep
-it running.
+Sending to participants means holding their contact information, and it means
+holding API credentials for the survey platform their data lives in. Both of
+those are governed by your protocol, not by a licence file. In practice I would
+need to be named on your IRB to have the access required to set it up and keep it
+running.
 
-So this is not a guide. It is a description of a system that works, published so
-that the design is citable and inspectable. If you are running a longitudinal
-study with timing requirements like these and want to talk about it, open an
-issue on this repository.
-
-If you would rather build your own from the description above, everything you
-need to know about the design is in this file and on
-[the site](https://dzweben.github.io/tempo/). That would be a perfectly good
-outcome.
+So this is a description of a system that works, published so the design is
+citable and inspectable. If you are running a longitudinal study with timing
+requirements like these and want to talk about it, open an issue on this
+repository. If you would rather build your own from the description above,
+everything you need to know about the design is in this file and on
+[the site](https://dzweben.github.io/tempo/).
 
 ## What is in this repository
 
 Source files only. Study-specific identifiers were replaced with placeholders,
-the schedule ships as a synthetic example rather than a real protocol, and no
+the schedule ships as a synthetic example instead of a real protocol, and no
 participant data or credentials have ever been committed here. The dashboard
-screenshots on the site are generated from synthetic records. Reference CI
-workflows under `examples/` are taken from a production deployment and are meant
-to be read and adapted rather than run as-is.
+screenshots on the site are generated from made-up records. The reference CI
+workflows under `examples/` come from a production deployment and are meant to be
+read and adapted, not run as-is.
 
 ## License
 
