@@ -22,74 +22,107 @@
 :root{
   --bg:#07060f; --bg2:#0b0917; --surf:#120f22; --surf2:#171330;
   --line:#241d44; --line2:#352a62;
-  --violet:#8b5cf6; --violet-hot:#a855f7; --coral:#ff6b7a; --cyan:#45d4f7; --navy:#2a1a6e;
+  --violet:#8b5cf6; --violet-hot:#a855f7; --coral:#ff6b7a; --cyan:#45d4f7;
+  --green:#54e8a8;
   --ink:#eceafb; --ink2:#b4aed6; --muted:#7d76a3;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   --disp:"Space Grotesk","Public Sans",system-ui,sans-serif;
   --body:"Public Sans",system-ui,-apple-system,sans-serif;
+  --w:1120px;
+  --ease:cubic-bezier(.2,.75,.2,1);
 }
 html{scroll-behavior:smooth}
-body{
-  margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.7 var(--body);
-  -webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative;
-}
-/* ambient field: dot grid + two colour blooms */
-body::before{
-  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:radial-gradient(circle at 1px 1px,rgba(139,92,246,.17) 1px,transparent 0);
+body{margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.7 var(--body);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+
+/* ---------- ambient field ---------- */
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(139,92,246,.16) 1px,transparent 0);
   background-size:34px 34px;
-  mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,#000 35%,transparent 78%);
-  -webkit-mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,#000 35%,transparent 78%);
-}
-body::after{
-  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  mask-image:radial-gradient(ellipse 130% 70% at 50% 0%,#000 32%,transparent 76%);
+  -webkit-mask-image:radial-gradient(ellipse 130% 70% at 50% 0%,#000 32%,transparent 76%)}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(620px 420px at 78% -6%,rgba(139,92,246,.20),transparent 68%),
-    radial-gradient(520px 380px at 6% 14%,rgba(69,212,247,.11),transparent 66%),
-    radial-gradient(460px 340px at 92% 62%,rgba(255,107,122,.09),transparent 66%);
-}
-.wrap,.topbar{position:relative;z-index:1}
-.wrap{max-width:960px;margin:0 auto;padding-inline:22px}
+    radial-gradient(640px 430px at 80% -8%,rgba(139,92,246,.21),transparent 68%),
+    radial-gradient(520px 390px at 4% 12%,rgba(69,212,247,.11),transparent 66%),
+    radial-gradient(500px 360px at 96% 58%,rgba(255,107,122,.09),transparent 66%)}
+.grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.038;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.wrap,.topbar,footer{position:relative;z-index:1}
+.wrap{max-width:var(--w);margin:0 auto;padding-inline:24px}
 #top{scroll-margin-top:0}
 a{color:var(--cyan)}
 h1,h2,h3{font-family:var(--disp);letter-spacing:-.035em;line-height:1.08;margin:0;text-wrap:balance}
 code,pre{font-family:var(--mono)}
+.prose{max-width:40rem}
+
+/* ---------- scroll progress + rail ---------- */
+.prog{position:fixed;top:0;left:0;height:2px;width:0;z-index:60;
+  background:linear-gradient(90deg,var(--violet),var(--cyan) 62%,var(--coral));
+  box-shadow:0 0 14px rgba(139,92,246,.95)}
+.spine{position:fixed;left:28px;top:50%;transform:translateY(-50%);z-index:3;display:none;
+  flex-direction:column}
+@media (min-width:1400px){.spine{display:flex}}
+.spine .rail,.spine .fill{position:absolute;left:5px;top:12px;width:1px}
+.spine .rail{bottom:12px;background:var(--line2)}
+.spine .fill{height:0;background:linear-gradient(180deg,var(--violet),var(--cyan));
+  box-shadow:0 0 9px var(--violet)}
+.snode{position:relative;display:flex;align-items:center;gap:13px;height:48px;text-decoration:none}
+.snode i{width:11px;height:11px;border-radius:50%;border:1px solid var(--line2);
+  background:var(--bg);flex:none;z-index:1;transition:all .22s var(--ease)}
+.snode em{font-family:var(--mono);font-size:.63rem;font-style:normal;letter-spacing:.17em;
+  text-transform:uppercase;color:var(--muted);opacity:0;transform:translateX(-6px);
+  transition:all .22s var(--ease);white-space:nowrap}
+.snode:hover em,.snode.on em{opacity:1;transform:none}
+.snode.on i{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 13px var(--cyan)}
+.snode.on em{color:var(--cyan)}
+
+/* ---------- reveal ---------- */
+[data-rev]{opacity:0;transform:translateY(22px);filter:blur(8px);
+  transition:opacity .66s var(--ease),transform .66s var(--ease),filter .66s var(--ease);
+  transition-delay:var(--d,0ms)}
+[data-rev].in{opacity:1;transform:none;filter:none}
 
 /* ---------- top bar ---------- */
-.topbar{position:sticky;top:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  background:rgba(7,6,15,.72);border-bottom:1px solid var(--line)}
-.topin{max-width:960px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;
-  justify-content:space-between;gap:18px;flex-wrap:wrap}
+.topbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  background:rgba(7,6,15,.74);border-bottom:1px solid var(--line)}
+.topin{max-width:var(--w);margin:0 auto;padding:12px 24px;display:flex;align-items:center;
+  justify-content:space-between;gap:18px}
 .brand{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:700;
-  font-size:1.08rem;letter-spacing:-.04em;color:var(--ink);text-decoration:none}
+  font-size:1.08rem;letter-spacing:-.04em;color:var(--ink);text-decoration:none;flex:none}
 .brand img{display:block;filter:drop-shadow(0 0 7px rgba(139,92,246,.6))}
-.navlinks{display:flex;gap:17px;font-size:.88rem;font-weight:500}
-.navlinks a{color:var(--ink2);text-decoration:none;transition:color .15s;padding:4px 2px;border-bottom:1px solid transparent}
+.navlinks{display:flex;gap:16px;font-size:.87rem;font-weight:500;overflow-x:auto;scrollbar-width:none}
+.navlinks::-webkit-scrollbar{display:none}
+.navlinks a{color:var(--ink2);text-decoration:none;transition:color .15s;padding:4px 2px;
+  border-bottom:1px solid transparent;white-space:nowrap}
 .navlinks a.on{color:var(--cyan);border-bottom-color:var(--cyan)}
 .navlinks a:hover{color:var(--cyan);text-shadow:0 0 14px rgba(69,212,247,.6)}
 
 /* ---------- hero ---------- */
-.hero{padding:74px 0 60px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);
-  gap:46px;align-items:center}
-.tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.7rem;
+.hero{padding:70px 0 58px;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,458px);
+  gap:54px;align-items:start}
+.heroL{display:flex;flex-direction:column;align-items:flex-start}
+.tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.69rem;
   font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);
-  border:1px solid var(--line2);border-radius:99px;padding:5px 13px;margin-bottom:22px;
+  border:1px solid var(--line2);border-radius:99px;padding:5px 13px;margin-bottom:26px;
   background:rgba(69,212,247,.06)}
 .tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cyan);
   box-shadow:0 0 10px var(--cyan);animation:beat 2.4s ease-in-out infinite}
 @keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
-h1{margin:0 0 18px;line-height:0}
-h1 svg{width:clamp(252px,32vw,330px);height:auto;display:block;color:var(--ink);
+h1{margin:0 0 14px;line-height:0}
+h1 svg{width:clamp(220px,24vw,272px);height:auto;display:block;color:var(--ink);
   filter:drop-shadow(0 0 26px rgba(139,92,246,.42))}
-.sub{font-family:var(--mono);font-size:.82rem;letter-spacing:.02em;color:var(--violet);
-  margin-bottom:20px;text-transform:lowercase}
-.lede{font-size:1.1rem;line-height:1.66;color:var(--ink2);max-width:40rem;margin:0 0 1rem}
-.lede strong{color:var(--ink);font-weight:600}
+.sub{font-family:var(--mono);font-size:.74rem;letter-spacing:.04em;color:var(--violet);
+  margin-bottom:22px;text-transform:lowercase;opacity:.95;line-height:1.75}
+@media (min-width:881px){.sub{white-space:nowrap}}
+.lede{font-size:1.07rem;line-height:1.62;color:var(--ink2);max-width:33rem;margin:0 0 .9rem}
+.lede.sm{font-size:.97rem;color:var(--muted);max-width:32rem}
 .grad{background:linear-gradient(95deg,var(--violet-hot),var(--cyan));
   -webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
-.cta{display:flex;gap:11px;flex-wrap:wrap;margin-top:26px}
+.cta{display:flex;gap:11px;flex-wrap:wrap;margin-top:30px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:9px;
-  font-weight:600;font-size:.93rem;text-decoration:none;transition:all .16s;position:relative}
+  font-weight:600;font-size:.92rem;text-decoration:none;transition:all .16s var(--ease)}
 .btn-p{background:linear-gradient(100deg,var(--violet),var(--violet-hot));color:#fff;
   box-shadow:0 0 0 1px rgba(168,85,247,.45),0 8px 26px -10px rgba(139,92,246,.85)}
 .btn-p:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(168,85,247,.7),0 12px 34px -10px rgba(139,92,246,1)}
@@ -104,62 +137,128 @@ h1 svg{width:clamp(252px,32vw,330px);height:auto;display:block;color:var(--ink);
              0 0 60px -30px rgba(139,92,246,.5);overflow:hidden;display:flex;flex-direction:column}
 .chead{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);
   background:rgba(8,6,20,.8);flex:none}
-.dot{width:9px;height:9px;border-radius:50%}
-.ctitle{font-family:var(--mono);font-size:.67rem;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--muted);margin-left:6px}
-.clock{margin-left:auto;font-family:var(--mono);font-size:.69rem;color:var(--cyan);
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.ctitle{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin-left:6px;white-space:nowrap}
+.clock{margin-left:auto;font-family:var(--mono);font-size:.68rem;color:var(--cyan);
   text-shadow:0 0 12px rgba(69,212,247,.6);font-variant-numeric:tabular-nums}
-.cbody{font-family:var(--mono);font-size:.745rem;line-height:1.62;padding:11px 14px;
-  height:252px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.cbody{font-family:var(--mono);font-size:.735rem;line-height:1.62;padding:14px 14px 11px;
+  height:392px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 18px);
+  mask-image:linear-gradient(180deg,transparent 0,#000 18px)}
 .cbody::-webkit-scrollbar{width:7px}
 .cbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
 .ln{white-space:pre-wrap;word-break:break-word;margin:0;animation:fadein .18s ease-out}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .dim{color:var(--muted)} .vio{color:var(--violet-hot)} .cy{color:var(--cyan)}
-.co{color:var(--coral)} .ok{color:#54e8a8} .wh{color:var(--ink)}
+.co{color:var(--coral)} .ok{color:var(--green)} .wh{color:var(--ink)}
 .row{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:baseline}
 .badge{font-size:.62rem;letter-spacing:.06em;padding:1px 7px;border-radius:99px;white-space:nowrap}
 .b-q{background:rgba(255,107,122,.1);color:var(--coral);border:1px solid rgba(255,107,122,.3)}
 .b-s{background:rgba(139,92,246,.16);color:#c4a7ff;border:1px solid rgba(139,92,246,.42)}
-.b-d{background:rgba(84,232,168,.1);color:#54e8a8;border:1px solid rgba(84,232,168,.3)}
+.b-d{background:rgba(84,232,168,.1);color:var(--green);border:1px solid rgba(84,232,168,.3)}
 .cprompt{display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--line);
-  background:rgba(8,6,20,.6);font-family:var(--mono);font-size:.76rem;flex:none}
+  background:rgba(8,6,20,.6);font-family:var(--mono);font-size:.75rem;flex:none}
 .ps1{color:var(--violet-hot)} .ps2{color:var(--muted)}
 .cprompt input{flex:1;background:none;border:none;outline:none;color:var(--ink);
-  font-family:var(--mono);font-size:.76rem;caret-color:var(--cyan);min-width:0}
+  font-family:var(--mono);font-size:.75rem;caret-color:var(--cyan);min-width:0}
 .cprompt input::placeholder{color:#4e4870}
-.hint{font-size:.63rem;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
-@media (max-width:880px){.cbody{height:216px}.hint{display:none}}
+.hint{font-size:.62rem;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+
+/* ---------- full-bleed stat band ---------- */
+.band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(18,15,34,.5),rgba(7,6,15,0));position:relative;z-index:1}
+.bandin{max-width:var(--w);margin:0 auto;padding:0 24px;display:grid;
+  grid-template-columns:repeat(4,1fr)}
+.bcell{padding:26px 22px 28px;border-left:1px solid var(--line)}
+.bcell:first-child{border-left:none;padding-left:0}
+.bval{font-family:var(--disp);font-size:2.1rem;font-weight:700;letter-spacing:-.05em;line-height:1;
+  background:linear-gradient(95deg,var(--cyan),var(--violet-hot));-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.blab{font-family:var(--mono);font-size:.64rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);margin-top:8px}
+.bsub{font-size:.8rem;color:var(--ink2);margin-top:6px;line-height:1.5}
 
 /* ---------- sections ---------- */
-section{padding:66px 0;position:relative;scroll-margin-top:66px}
+section{padding:78px 0;position:relative;scroll-margin-top:56px}
 section+section{border-top:1px solid var(--line)}
-.kick{font-family:var(--mono);font-size:.69rem;font-weight:500;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--coral);margin-bottom:12px}
+.shead{display:flex;gap:20px;align-items:flex-start;margin:0 0 28px}
+.sidx{font-family:var(--disp);font-weight:700;font-size:3rem;line-height:.82;letter-spacing:-.06em;
+  color:transparent;-webkit-text-stroke:1px var(--line2);flex:none;padding-top:3px;
+  font-variant-numeric:tabular-nums}
+.kick{font-family:var(--mono);font-size:.68rem;font-weight:500;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--coral);margin-bottom:11px}
 h2{font-size:clamp(1.7rem,3.8vw,2.3rem);font-weight:700;margin-bottom:14px}
-.intro{color:var(--ink2);max-width:42rem;margin:0 0 30px;font-size:1.03rem}
-p{margin:0 0 1rem;max-width:42rem;color:var(--ink2)}
+.intro{color:var(--ink2);max-width:40rem;margin:0 0 32px;font-size:1.02rem}
+p{margin:0 0 1rem;max-width:40rem;color:var(--ink2)}
 p strong{color:var(--ink);font-weight:600}
-h3{font-size:1rem;font-weight:600;margin:2.1rem 0 .7rem;color:var(--ink);
-  font-family:var(--mono);letter-spacing:-.01em}
-h3::before{content:"// ";color:var(--violet)}
+.sublab{font-family:var(--mono);font-size:.68rem;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--violet);margin:2.6rem 0 .8rem;display:flex;
+  align-items:center;gap:11px}
+.sublab::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
 
-/* flow steps */
-.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:12px;margin:0 0 30px}
-.fstep{background:linear-gradient(165deg,rgba(23,19,48,.9),rgba(18,15,34,.6));
-  border:1px solid var(--line);border-radius:12px;padding:16px 17px;position:relative;
-  overflow:hidden;transition:border-color .18s,transform .18s}
-.fstep::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;
-  background:linear-gradient(90deg,var(--violet),var(--cyan));opacity:.75}
-.fstep:hover{border-color:var(--line2);transform:translateY(-3px)}
-.fstep b{display:block;font-family:var(--mono);font-size:.68rem;font-weight:500;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--cyan);margin-bottom:7px}
-.fstep span{font-size:.88rem;color:var(--ink2);line-height:1.56}
+/* ---------- animated pipeline (flow) ---------- */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 34px;
+  position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(23,19,48,.6),rgba(12,10,26,.3))}
+.flow::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;z-index:2;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--violet-hot),transparent);
+  background-size:42% 100%;background-repeat:no-repeat;animation:sweep 5.2s linear infinite}
+@keyframes sweep{0%{background-position:-45% 0}100%{background-position:145% 0}}
+.fstep{padding:20px 19px 22px;position:relative;border-left:1px solid var(--line)}
+.fstep:first-child{border-left:none}
+.fstep::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(130% 90% at 50% 0%,rgba(69,212,247,.13),transparent 62%);
+  opacity:0;animation:stg 5.2s linear infinite}
+.fstep:nth-child(1)::after{animation-delay:0s}
+.fstep:nth-child(2)::after{animation-delay:1.3s}
+.fstep:nth-child(3)::after{animation-delay:2.6s}
+.fstep:nth-child(4)::after{animation-delay:3.9s}
+@keyframes stg{0%{opacity:0}5%{opacity:1}20%{opacity:1}30%{opacity:0}100%{opacity:0}}
+.fstep b{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.67rem;
+  font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:9px}
+.fstep b i{font-style:normal;color:var(--muted);font-size:.62rem}
+.fstep span{font-size:.87rem;color:var(--ink2);line-height:1.56;display:block}
+.fstep .arw{position:absolute;right:-7px;top:50%;transform:translateY(-50%);z-index:3;
+  width:14px;height:14px;border-radius:50%;background:var(--bg2);border:1px solid var(--line2);
+  display:grid;place-items:center;font-size:.55rem;color:var(--muted)}
+.fstep:last-child .arw{display:none}
+@media (max-width:820px){
+  .flow{grid-template-columns:1fr}
+  .fstep{border-left:none;border-top:1px solid var(--line)}
+  .fstep:first-child{border-top:none}
+  .fstep .arw{display:none}
+}
 
-/* code */
-pre{background:#0a0817;border:1px solid var(--line);border-radius:11px;padding:17px 19px;
-  overflow-x:auto;font-size:.82rem;line-height:1.66;margin:0 0 1.3rem;
-  box-shadow:inset 0 1px 0 rgba(139,92,246,.09)}
+/* ---------- code window ---------- */
+.cw{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 1.3rem;
+  background:linear-gradient(180deg,#100d20,#0a0817);
+  box-shadow:0 30px 80px -42px #000,0 0 0 1px rgba(139,92,246,.1)}
+.cwh{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--line);
+  background:rgba(8,6,20,.85)}
+.tabs{display:flex;gap:4px;margin-left:7px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-family:var(--mono);font-size:.69rem;padding:5px 11px;border-radius:7px;
+  border:1px solid transparent;background:none;color:var(--muted);cursor:pointer;
+  white-space:nowrap;transition:all .15s var(--ease)}
+.tab:hover{color:var(--ink2)}
+.tab.on{color:var(--cyan);background:rgba(69,212,247,.08);border-color:rgba(69,212,247,.3)}
+.copy{margin-left:auto;font-family:var(--mono);font-size:.63rem;letter-spacing:.11em;
+  text-transform:uppercase;background:none;border:1px solid var(--line2);color:var(--muted);
+  padding:5px 10px;border-radius:7px;cursor:pointer;transition:all .15s var(--ease);flex:none}
+.copy:hover{color:var(--cyan);border-color:var(--cyan)}
+.copy.done{color:var(--green);border-color:var(--green)}
+.pane{display:none}
+.pane.on{display:block}
+.cwb{display:grid;grid-template-columns:auto minmax(0,1fr)}
+.gut{font-family:var(--mono);font-size:.775rem;line-height:1.72;padding:16px 11px 16px 16px;
+  color:#443e66;text-align:right;user-select:none;white-space:pre;
+  border-right:1px solid rgba(36,29,68,.85);background:rgba(8,6,20,.4)}
+.cw pre{margin:0;border:none;border-radius:0;background:none;box-shadow:none;
+  padding:16px 18px;font-size:.775rem;line-height:1.72;overflow-x:auto}
+.cwf{padding:11px 16px;border-top:1px solid var(--line);background:rgba(8,6,20,.45);
+  font-size:.83rem;color:var(--muted);line-height:1.5}
+.cwf b{color:var(--ink2);font-weight:600}
 pre code{color:#d8d3f0}
 .c{color:#6b6490;font-style:italic}
 .s{color:#ffb48a}
@@ -167,67 +266,164 @@ pre code{color:#d8d3f0}
 p code,td code,li code{background:rgba(139,92,246,.11);border:1px solid rgba(139,92,246,.22);
   border-radius:5px;padding:.1em .38em;font-size:.86em;color:#c9b6ff}
 
-/* tables */
-.tw{overflow-x:auto;margin:0 0 1.5rem}
-table{width:100%;border-collapse:collapse;font-size:.9rem;
-  border:1px solid var(--line);border-radius:11px;overflow:hidden}
-th{text-align:left;font-family:var(--mono);font-size:.66rem;font-weight:500;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--cyan);padding:11px 14px;background:rgba(69,212,247,.05);
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 1.5rem;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.89rem}
+th{text-align:left;font-family:var(--mono);font-size:.65rem;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--cyan);padding:11px 15px;background:rgba(69,212,247,.05);
   border-bottom:1px solid var(--line2)}
-td{padding:11px 14px;border-bottom:1px solid rgba(36,29,68,.7);vertical-align:top;color:var(--ink2)}
+td{padding:12px 15px;border-bottom:1px solid rgba(36,29,68,.7);vertical-align:top;color:var(--ink2)}
 tr:last-child td{border-bottom:none}
 td strong{color:var(--ink)}
 
-/* screenshots */
-.diagram{margin:0 0 2rem}
-.diagram img{width:100%;display:block;border:1px solid var(--line);border-radius:12px;
-  box-shadow:0 24px 60px -34px #000,0 0 50px -28px rgba(139,92,246,.45)}
-figure{margin:0 0 1.7rem}
-figure img{width:100%;display:block;border:1px solid var(--line2);border-radius:12px;
-  box-shadow:0 30px 70px -36px rgba(0,0,0,1),0 0 0 1px rgba(139,92,246,.12)}
-figcaption{font-size:.84rem;color:var(--muted);margin-top:.6rem;font-family:var(--mono)}
-.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.4rem}
+/* ---------- scheduler ribbon ---------- */
+.sched{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 1.6rem;
+  background:linear-gradient(180deg,rgba(20,16,42,.85),rgba(10,8,23,.9));
+  box-shadow:0 30px 80px -44px #000,0 0 0 1px rgba(139,92,246,.1)}
+.schh{display:flex;align-items:center;gap:14px;padding:10px 15px;border-bottom:1px solid var(--line);
+  background:rgba(8,6,20,.7);flex-wrap:wrap}
+.schh .lbl{font-family:var(--mono);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted)}
+.readouts{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.ro{font-family:var(--mono);font-size:.64rem;letter-spacing:.07em;padding:4px 10px;border-radius:7px;
+  border:1px solid var(--line2);color:var(--muted);background:rgba(23,19,48,.6);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.ro b{color:var(--cyan);font-weight:500}
+.ro.sent b{color:var(--green)}
+.schbody{padding:4px 0 0}
+.schbody svg{display:block;width:100%;height:auto}
+.schn{display:flex;gap:16px;flex-wrap:wrap;padding:10px 15px 11px;border-top:1px solid var(--line);
+  background:rgba(8,6,20,.4);font-family:var(--mono);font-size:.62rem;letter-spacing:.07em;
+  color:var(--muted)}
+.schn i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
+  vertical-align:middle}
 
-/* metric strip */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:8px 0 30px}
-.metric{border:1px solid var(--line);border-radius:11px;padding:15px 17px;
-  background:linear-gradient(165deg,rgba(23,19,48,.85),rgba(18,15,34,.5))}
-.mval{font-family:var(--disp);font-size:1.75rem;font-weight:700;letter-spacing:-.04em;
-  background:linear-gradient(95deg,var(--cyan),var(--violet-hot));-webkit-background-clip:text;
-  background-clip:text;color:transparent;line-height:1.1}
-.mlab{font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;
-  color:var(--muted);margin-top:5px}
+/* ---------- product showcase ---------- */
+.shw{display:grid;grid-template-columns:minmax(0,1fr) 262px;gap:22px;align-items:start;margin:0 0 1.6rem}
+.frame{border:1px solid var(--line2);border-radius:13px;overflow:hidden;background:#0a0817;
+  box-shadow:0 40px 100px -48px #000,0 0 0 1px rgba(139,92,246,.1),0 0 80px -44px rgba(139,92,246,.55)}
+.fbar{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--line);
+  background:rgba(8,6,20,.85)}
+.url{flex:1;min-width:0;font-family:var(--mono);font-size:.63rem;color:var(--muted);
+  background:rgba(36,29,68,.45);border:1px solid rgba(53,42,98,.6);border-radius:6px;
+  padding:4px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:5px}
+.url span{color:var(--cyan)}
+.stage{position:relative;aspect-ratio:3/2;background:#0a0817}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity .38s var(--ease)}
+.stage img.on{opacity:1}
+.picks{display:flex;flex-direction:column;gap:7px}
+.pick{display:block;width:100%;text-align:left;cursor:pointer;color:inherit;font:inherit;
+  background:linear-gradient(165deg,rgba(23,19,48,.8),rgba(18,15,34,.45));
+  border:1px solid var(--line);border-left:2px solid transparent;border-radius:10px;
+  padding:11px 13px;transition:all .16s var(--ease)}
+.pick:hover{border-color:var(--line2);transform:translateX(2px)}
+.pick.on{border-left-color:var(--cyan);background:linear-gradient(165deg,rgba(69,212,247,.1),rgba(18,15,34,.55))}
+.pick b{display:block;font-family:var(--mono);font-size:.665rem;font-weight:500;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px;transition:color .16s}
+.pick.on b{color:var(--cyan)}
+.pick em{font-style:normal;font-size:.8rem;color:var(--ink2);line-height:1.5;display:block}
+@media (max-width:980px){
+  .shw{grid-template-columns:1fr}
+  .picks{flex-direction:row;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .picks::-webkit-scrollbar{display:none}
+  .pick{width:auto;flex:0 0 238px;border-left-width:1px;border-top:2px solid transparent}
+  .pick.on{border-left-color:var(--line);border-top-color:var(--cyan)}
+  .pick:hover{transform:translateY(-2px)}
+}
 
-/* footer */
-footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);
-  position:relative;z-index:1}
+/* ---------- footer ---------- */
+footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
 .cite{background:linear-gradient(165deg,rgba(23,19,48,.9),rgba(18,15,34,.6));
   border:1px solid var(--line);border-left:2px solid var(--violet);border-radius:10px;
-  padding:15px 18px;font-size:.87rem;margin:0 0 1.3rem;max-width:44rem;color:var(--ink2)}
+  padding:16px 19px;font-size:.87rem;margin:0 0 1.3rem;max-width:44rem;color:var(--ink2)}
 .cite strong{color:var(--ink)}
-@media (max-width:880px){.hero{grid-template-columns:1fr;gap:34px;padding:50px 0 44px}}
-@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.fbot{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:.85rem}
+
+@media (max-width:880px){
+  .hero{grid-template-columns:1fr;gap:34px;padding:52px 0 44px}
+  .cbody{height:244px}
+  .hint{display:none}
+  section{padding:58px 0}
+  .bandin{grid-template-columns:repeat(2,1fr)}
+  .bcell{padding:20px 16px 22px}
+  .bcell:nth-child(3){border-left:none;padding-left:0}
+  .bcell:nth-child(3),.bcell:nth-child(4){border-top:1px solid var(--line)}
+  .shead{gap:14px}
+  .sidx{font-size:2.1rem}
+}
+@media (max-width:460px){
+  .bandin{grid-template-columns:1fr}
+  .bcell{border-left:none!important;padding-left:0!important;border-top:1px solid var(--line)}
+  .bcell:first-child{border-top:none}
+  .sidx{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important}
+  [data-rev]{opacity:1!important;transform:none!important;filter:none!important}
+  html{scroll-behavior:auto}
+}
+
+/* ---------- scheduler ribbon internals ---------- */
+.track{position:relative;height:174px;margin:0 16px}
+.nb{position:absolute;top:0;bottom:27px;background:rgba(4,3,10,.72);
+  box-shadow:inset 1px 0 0 rgba(36,29,68,.45),inset -1px 0 0 rgba(36,29,68,.45)}
+.dsep{position:absolute;top:0;bottom:27px;width:1px;background:rgba(36,29,68,.85)}
+.dlab{position:absolute;bottom:6px;font-family:var(--mono);font-size:.59rem;letter-spacing:.13em;
+  text-transform:uppercase;color:#4e4870;transform:translateX(-50%);white-space:nowrap}
+.base{position:absolute;left:0;right:0;bottom:27px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--line2) 4%,var(--line2) 96%,transparent)}
+.slot{position:absolute;bottom:27px;width:0}
+.slot .stem{position:absolute;bottom:0;left:0;width:1px;background:var(--line2);
+  transition:background .35s var(--ease),box-shadow .35s var(--ease)}
+.slot .pt{position:absolute;left:-4.5px;width:9px;height:9px;border-radius:50%;
+  border:1.5px solid var(--line2);background:var(--bg);box-sizing:border-box;
+  transition:all .35s var(--ease)}
+.slot .ring{position:absolute;left:-5px;width:10px;height:10px;border-radius:50%;
+  border:1px solid var(--cyan);opacity:0;pointer-events:none}
+.slot.fired .stem{background:linear-gradient(0deg,rgba(139,92,246,.35),var(--cyan));
+  box-shadow:0 0 7px rgba(69,212,247,.55)}
+.slot.fired .pt{border-color:var(--cyan);background:var(--cyan);
+  box-shadow:0 0 13px var(--cyan),0 0 3px #fff}
+.slot.fired .ring{animation:ringout .72s ease-out}
+@keyframes ringout{0%{opacity:.85;transform:scale(1)}100%{opacity:0;transform:scale(5.5)}}
+.now{position:absolute;top:0;bottom:27px;width:1px;left:0;
+  background:linear-gradient(180deg,transparent,var(--coral) 14%,var(--coral) 86%,transparent);
+  box-shadow:0 0 15px rgba(255,107,122,.9)}
+.now::after{content:"";position:absolute;bottom:-3.5px;left:-3.5px;width:8px;height:8px;
+  border-radius:50%;background:var(--coral);box-shadow:0 0 13px var(--coral)}
+@media (max-width:640px){.track{height:138px;margin:0 12px}.dlab{font-size:.53rem;letter-spacing:.06em}}
 </style>
 </head>
 <body>
+<div class="grain"></div>
+<div class="prog" id="prog"></div>
+
+<nav class="spine" id="spine" aria-label="Section progress">
+  <span class="rail"></span><span class="fill" id="sfill"></span>
+  <a class="snode" href="#top"><i></i><em>top</em></a>
+  <a class="snode" href="#how"><i></i><em>how it works</em></a>
+  <a class="snode" href="#code"><i></i><em>code</em></a>
+  <a class="snode" href="#ema"><i></i><em>ema</em></a>
+  <a class="snode" href="#server"><i></i><em>server</em></a>
+</nav>
 
 <div class="topbar"><div class="topin">
   <a class="brand" href="#top"><img src="img/mark.svg" alt="" width="64" height="27">tempo</a>
-  <nav class="navlinks">
+  <div class="navlinks">
     <a href="#how">How it works</a>
     <a href="#code">Code</a>
     <a href="#ema">EMA</a>
     <a href="#server">Server</a>
     <a href="https://github.com/dzweben/tempo">GitHub</a>
-  </nav>
+  </div>
 </div></div>
 
 <div class="wrap" id="top">
-
 <header class="hero">
-  <div>
-    <div class="tag">open-source research software</div>
-    <h1>      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 773" role="img" aria-label="tempo" class="logo">
+  <div class="heroL">
+    <div class="tag" data-rev>open-source research software</div>
+    <h1 data-rev style="--d:60ms"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 773" role="img" aria-label="tempo" class="logo">
         <title>tempo</title>
         <defs>
           <radialGradient id="tNavy" cx="38%" cy="30%"><stop offset="0" stop-color="#33217a"/><stop offset="1" stop-color="#1a0f42"/></radialGradient>
@@ -326,26 +522,24 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
           </g>
         </g>
       </svg></h1>
-    <div class="sub">tracking · engagement · messaging · participant outreach</div>
-    <p class="lede">
-      A survey platform holds the roster, a survey link per participant, date fields, and a
-      completion flag on every form. Messaging APIs handle SMS and email.
-      <span class="grad">TEMPO connects the two:</span> it reads the survey platform, works out
-      which participants are due a message and when, sends it, and logs the result.
+    <div class="sub" data-rev style="--d:120ms">tracking &middot; engagement &middot; messaging &middot; participant outreach</div>
+    <p class="lede" data-rev style="--d:170ms">
+      Your survey platform already holds the roster, the dates and a completion flag on every
+      form. Messaging APIs already send texts and email.
+      <span class="grad">TEMPO is the part in between</span> &mdash; working out who is due a
+      message, sending it on the scheduled second, and writing down every one.
     </p>
-    <p class="lede">
-      Once the schedule is declared, it runs unattended &mdash; for a reminder due on a given
-      day, and for an EMA prompt that has to fire at an exact minute, 25 times across a
-      sampling period.
+    <p class="lede sm" data-rev style="--d:220ms">
+      Declared once. Runs for the length of the study, unattended.
     </p>
-    <div class="cta">
+    <div class="cta" data-rev style="--d:270ms">
       <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
       <a class="btn btn-g" href="#server">See the server</a>
       <a class="btn btn-g" href="https://doi.org/10.5281/zenodo.22925367">DOI</a>
     </div>
   </div>
 
-  <div class="console">
+  <div class="console" data-rev style="--d:200ms">
     <div class="chead">
       <span class="dot" style="background:#ff5f57"></span>
       <span class="dot" style="background:#febc2e"></span>
@@ -361,36 +555,52 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
     </form>
   </div>
 </header>
+</div>
 
+<div class="band">
+  <div class="bandin">
+    <div class="bcell" data-rev>
+      <div class="bval">2&ndash;4s</div><div class="blab">prompt latency</div>
+      <div class="bsub">Measured past the scheduled second, written per message.</div>
+    </div>
+    <div class="bcell" data-rev style="--d:80ms">
+      <div class="bval">3&times;</div><div class="blab">dedup layers</div>
+      <div class="bsub">Ledger, claim-before-transmit, provider history.</div>
+    </div>
+    <div class="bcell" data-rev style="--d:160ms">
+      <div class="bval">SMS + email</div><div class="blab">channels</div>
+      <div class="bsub">Chosen per message by which contact field is present.</div>
+    </div>
+    <div class="bcell" data-rev style="--d:240ms">
+      <div class="bval">0</div><div class="blab">servers to run</div>
+      <div class="bsub">Anything that can call a URL on a schedule will do.</div>
+    </div>
+  </div>
+</div>
 
+<div class="wrap">
 <section id="how">
-  <div class="kick">How it works</div>
-  <h2>Dates in, messages out</h2>
-  <p class="intro">
+  <div class="shead" data-rev>
+    <div class="sidx">01</div>
+    <div><div class="kick">How it works</div><h2>Dates in, messages out</h2></div>
+  </div>
+  <p class="intro" data-rev>
     Each message is declared once. The pipeline expands the declarations against the current
     export into dated rows. Senders drain that queue on a clock.
   </p>
-  <figure class="diagram">
-    <img src="img/diagram.png" alt="Flow diagram: survey platform, pipeline, queue, senders, ledger" loading="lazy">
-  </figure>
 
-  <div class="flow">
-    <div class="fstep"><b>01 &middot; pull</b><span>Export records, date fields and completion flags. Resolve each participant's survey link.</span></div>
-    <div class="fstep"><b>02 &middot; compute</b><span>Turn each declaration into a timestamp: a date field plus an offset, gated on a completion flag.</span></div>
-    <div class="fstep"><b>03 &middot; send</b><span>Send what is due over SMS and email, with the participant's link substituted in.</span></div>
-    <div class="fstep"><b>04 &middot; record</b><span>Append to a ledger so the same message cannot go twice.</span></div>
+  <div class="flow" data-rev>
+    <div class="fstep"><b><i>01</i> pull</b><span>Export records, date fields and completion flags. Resolve each participant's survey link.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>02</i> compute</b><span>Turn each declaration into a timestamp: a date field plus an offset, gated on a completion flag.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>03</i> send</b><span>Send what is due over SMS and email, with the participant's link substituted in.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>04</i> record</b><span>Append to a ledger so the same message cannot go twice.</span><span class="arw">&rsaquo;</span></div>
   </div>
-  <div class="metrics">
-    <div class="metric"><div class="mval">2&ndash;4s</div><div class="mlab">prompt latency</div></div>
-    <div class="metric"><div class="mval">3&times;</div><div class="mlab">dedup layers</div></div>
-    <div class="metric"><div class="mval">SMS + email</div><div class="mlab">channels</div></div>
-    <div class="metric"><div class="mval">0</div><div class="mlab">servers to run</div></div>
-  </div>
-  <p>
+
+  <p data-rev>
     The build here uses REDCap, OpenPhone and Gmail SMTP. Swapping any of them means
     reimplementing a few calls &mdash; Qualtrics, Twilio and SES expose the same primitives.
   </p>
-  <div class="tw">
+  <div class="tw" data-rev>
   <table>
     <tr><th>Integration point</th><th>What TEMPO needs from it</th></tr>
     <tr><td><strong>Survey platform</strong></td><td>A record export, date fields, per-form completion flags, and a per-participant survey link</td></tr>
@@ -402,15 +612,29 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
 </section>
 
 <section id="code">
-  <div class="kicker">Sample code</div>
-  <h2>What it looks like in practice</h2>
-  <p class="intro">
+  <div class="shead" data-rev>
+    <div class="sidx">02</div>
+    <div><div class="kick">Sample code</div><h2>What it looks like in practice</h2></div>
+  </div>
+  <p class="intro" data-rev>
     Field names below are placeholders for your own event and instrument names.
   </p>
 
-  <h3>Declaring a message</h3>
-  <p>One entry: when it is owed, when it fires, where it goes, what it says.</p>
-<pre><code>{
+  <div class="cw" data-rev id="cw">
+    <div class="cwh">
+      <span class="dot" style="background:#ff5f57"></span>
+      <span class="dot" style="background:#febc2e"></span>
+      <span class="dot" style="background:#28c840"></span>
+      <div class="tabs" role="tablist">
+        <button class="tab on" role="tab" aria-selected="true">declare.js</button>
+        <button class="tab" role="tab" aria-selected="false">schedule.js</button>
+        <button class="tab" role="tab" aria-selected="false">send-sms.js</button>
+        <button class="tab" role="tab" aria-selected="false">send-email.js</button>
+      </div>
+      <button class="copy" id="copy">copy</button>
+    </div>
+
+    <div class="pane on"><div class="cwb"><div class="gut"></div><pre><code>{
   instrument: <span class="s">"Follow-up reminder"</span>,
 
   <span class="c">// Owed only while the form is still incomplete.</span>
@@ -427,14 +651,11 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
   // that participant's own URL, resolved at send time.</span>
   message: <span class="s">"Hi [baseline_arm_1][first_name], your follow-up is open: "</span> +
            <span class="s">"[followup_arm_1][survey-link:followup_1]"</span>,
-}</code></pre>
+}</code></pre></div>
+      <div class="cwf"><b>Declaring a message.</b> One entry: when it is owed, when it fires, where it goes, what it says.</div>
+    </div>
 
-  <h3>Computing the send time</h3>
-  <p>
-    Resolved per participant against their own dates. Repeats stop when the completion flag
-    flips, so responders are not chased.
-  </p>
-<pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
+    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
 <span class="k">const</span> { offsetDays, everyDays, maxTimes } = parseSpec(alert.sendDateSpec);
 
 <span class="k">const</span> sends = [];
@@ -442,29 +663,34 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
   <span class="k">if</span> (isComplete(participant, alert.condition)) <span class="k">break</span>;   <span class="c">// responded, stop</span>
   sends.push(atStudyTime(addDays(anchor, offsetDays + n * everyDays), <span class="s">"17:00"</span>));
 }
-<span class="c">// → 2026-03-18T17:00, 2026-03-25T17:00, 2026-04-01T17:00</span></code></pre>
+<span class="c">// → 2026-03-18T17:00, 2026-03-25T17:00, 2026-04-01T17:00</span></code></pre></div>
+      <div class="cwf"><b>Computing the send time.</b> Resolved per participant against their own dates. Repeats stop when the completion flag flips, so responders are not chased.</div>
+    </div>
 
-  <h3>Sending a text</h3>
-<pre><code><span class="k">await</span> fetch(<span class="s">"https://api.openphone.com/v1/messages"</span>, {
+    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="k">await</span> fetch(<span class="s">"https://api.openphone.com/v1/messages"</span>, {
   method: <span class="s">"POST"</span>,
   headers: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span>, Authorization: API_KEY },
   body: JSON.stringify({ content: body, from: FROM_NUMBER, to: [e164] }),
   signal: AbortSignal.timeout(<span class="s">30_000</span>),
-});</code></pre>
+});</code></pre></div>
+      <div class="cwf"><b>Sending a text.</b> One HTTP call. Any provider with a send endpoint drops in here.</div>
+    </div>
 
-  <h3>Sending an email</h3>
-<pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
+    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
   host: <span class="s">"smtp.gmail.com"</span>, port: <span class="s">587</span>, secure: <span class="k">false</span>,
   pool: <span class="k">true</span>, auth: { user: SMTP_USER, pass: SMTP_PASS },
 });
 
-<span class="k">await</span> mailer.sendMail({ from, to: recipient, subject, text: body });</code></pre>
+<span class="k">await</span> mailer.sendMail({ from, to: recipient, subject, text: body });</code></pre></div>
+      <div class="cwf"><b>Sending an email.</b> Pooled SMTP, so a batch reuses one connection.</div>
+    </div>
+  </div>
 
-  <h3>Not sending it twice</h3>
-  <p>
+  <div class="sublab" data-rev>not sending it twice</div>
+  <p data-rev>
     Sending cannot be undone, so at-most-once is enforced three separate ways.
   </p>
-  <div class="tw">
+  <div class="tw" data-rev>
   <table>
     <tr><th>Mechanism</th><th>What it catches</th></tr>
     <tr><td><strong>Append-only ledger</strong><br><code>pid|alert|time|channel|recipient</code></td><td>The ordinary case: a rerun, a retry, an overlapping schedule</td></tr>
@@ -472,27 +698,59 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
     <tr><td><strong>Provider history check</strong></td><td>A send that happened but whose ledger write was lost</td></tr>
   </table>
   </div>
-  <p>
+  <p data-rev>
     Other guards: quiet hours, an opt-out list checked at queue time and again at send time,
     a per-run cap, no send if the survey link did not resolve, dry-run by default, and a kill
     switch that takes effect without a redeploy.
   </p>
 </section>
+
 <section id="ema">
-  <div class="kicker">Momentary assessment</div>
-  <h2>Prompts on the minute</h2>
-  <p class="intro">
+  <div class="shead" data-rev>
+    <div class="sidx">03</div>
+    <div><div class="kick">Momentary assessment</div><h2>Prompts on the minute</h2></div>
+  </div>
+  <p class="intro" data-rev>
     EMA prompts ask what someone is doing right now, so they have to arrive at the minute
     they were scheduled for. Late is not useful.
   </p>
 
-  <p>
+  <div class="sched" data-rev id="sched">
+    <div class="schh">
+      <span class="lbl">sampling grid &mdash; 25 slots / 7 days</span>
+      <div class="readouts">
+        <span class="ro sent">sent <b id="roSent">0</b></span>
+        <span class="ro">queued <b id="roQ">25</b></span>
+        <span class="ro">last <b id="roLat">&mdash;</b></span>
+      </div>
+    </div>
+    <div class="schbody"><div class="track" id="track"></div></div>
+    <div class="schn">
+      <span><i style="background:var(--bg);border:1.5px solid var(--line2)"></i>scheduled</span>
+      <span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>sent</span>
+      <span><i style="background:rgba(7,6,15,.9);border:1px solid var(--line2)"></i>quiet hours &mdash; no prompt scheduled</span>
+      <span><i style="background:var(--coral);box-shadow:0 0 8px var(--coral)"></i>now</span>
+    </div>
+  </div>
+
+  <p data-rev>
     A sampling grid is a set of fixed weekday and clock-time slots. It gets anchored to each
     participant's start date and expanded into dated rows, each carrying their phone number
-    and survey link.
+    and survey link. Stem height above is the time of day; the shaded columns are quiet hours.
   </p>
 
-<pre><code><span class="c">// A sampling grid: slots repeat across the period, anchored per participant.</span>
+  <div class="cw" data-rev id="cw2">
+    <div class="cwh">
+      <span class="dot" style="background:#ff5f57"></span>
+      <span class="dot" style="background:#febc2e"></span>
+      <span class="dot" style="background:#28c840"></span>
+      <div class="tabs" role="tablist">
+        <button class="tab on" role="tab" aria-selected="true">grid.js</button>
+        <button class="tab" role="tab" aria-selected="false">fire.js</button>
+      </div>
+      <button class="copy">copy</button>
+    </div>
+    <div class="pane on"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// A sampling grid: slots repeat across the period, anchored per participant.</span>
 <span class="k">const</span> GRID = [
   { day: <span class="s">"Mon"</span>, at: <span class="s">"08:10"</span> }, { day: <span class="s">"Mon"</span>, at: <span class="s">"13:45"</span> }, { day: <span class="s">"Mon"</span>, at: <span class="s">"19:20"</span> },
   <span class="c">// … 25 slots across the sampling period</span>
@@ -505,65 +763,70 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
     phone: participant.fields[<span class="s">"prompt_phone"</span>],
     surveyLink: <span class="k">await</span> resolveLink(participant, slot.form),
   });
-}</code></pre>
-
-  <p>
-    Schedulers are not punctual, so the sender does not rely on being invoked at the right
-    moment. It runs on a coarse clock, picks up any slot inside its look-ahead window, and
-    waits in-process until the exact second. It claims the slot before transmitting, so two
-    overlapping runs cannot both send. Past the grace window a prompt is recorded as skipped
-    rather than sent late.
-  </p>
-
-<pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
+}</code></pre></div>
+      <div class="cwf"><b>Expanding the grid.</b> Fixed weekday and clock-time slots, anchored to each participant's own start date.</div>
+    </div>
+    <div class="pane"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
 <span class="k">const</span> waitMs = slot.sendAt - Date.now();
 <span class="k">if</span> (waitMs &gt; <span class="s">0</span>) <span class="k">await</span> sleep(waitMs);
 
 <span class="k">if</span> (<span class="k">await</span> claim(slot.key)) {            <span class="c">// lost the race? another run has it</span>
   <span class="k">await</span> sendSMS(slot.phone, render(slot));
   <span class="k">await</span> ledger.append({ ...slot, status: <span class="s">"sent"</span>, latencySec: <span class="s">2</span> });
-}</code></pre>
-
-  <p>
-    Measured latency in production is 2–4 seconds past the scheduled second. It is written
-    to the ledger per message.
-  </p>
-</section>
-<section id="server">
-  <div class="kicker">The server</div>
-  <h2>A dashboard over the whole thing</h2>
-  <p class="intro">
-    The dashboard reads the same files the senders write. No second database. Screens below
-    run on synthetic data.
-  </p>
-
-  <figure>
-    <img src="img/dash-overview.png" alt="Overview screen showing participant totals, messages due in the next seven days, and a per-wave completion table" loading="lazy">
-    <figcaption>Totals, what is due, and completion by phase.</figcaption>
-  </figure>
-
-  <div class="shots">
-    <figure>
-      <img src="img/dash-queue.png" alt="Outgoing queue grouped by day, listing scheduled messages per participant" loading="lazy">
-      <figcaption>Scheduled messages, grouped by day.</figcaption>
-    </figure>
-    <figure>
-      <img src="img/dash-sent.png" alt="Sent log listing each delivered message with channel, recipient and status" loading="lazy">
-      <figcaption>What already went out, with channel, recipient and status.</figcaption>
-    </figure>
+}</code></pre></div>
+      <div class="cwf"><b>Hitting the second.</b> Schedulers are not punctual, so the sender runs on a coarse clock, picks up any slot inside its look-ahead window, and waits in-process until the exact second.</div>
+    </div>
   </div>
 
-  <figure>
-    <img src="img/dash-ema.png" alt="Momentary assessment tracker showing per-participant prompt completion against the sampling grid" loading="lazy">
-    <figcaption>EMA completion against the grid, per participant.</figcaption>
-  </figure>
+  <p data-rev>
+    It claims the slot before transmitting, so two overlapping runs cannot both send. Past the
+    grace window a prompt is recorded as skipped rather than sent late. Measured latency in
+    production is 2&ndash;4 seconds past the scheduled second, written to the ledger per message.
+  </p>
+</section>
 
-  <figure>
-    <img src="img/dash-participants.png" alt="Participant roster with per-participant status" loading="lazy">
-    <figcaption>The roster with each participant's progress.</figcaption>
-  </figure>
+<section id="server">
+  <div class="shead" data-rev>
+    <div class="sidx">04</div>
+    <div><div class="kick">The server</div><h2>A dashboard over the whole thing</h2></div>
+  </div>
+  <p class="intro" data-rev>
+    The dashboard reads the same files the senders write &mdash; no second database. It shows both
+    aggregate distributions and where each individual participant sits inside their own sequence.
+    Screens below run on synthetic data.
+  </p>
 
-  <p>
+  <div class="shw" data-rev>
+    <div class="frame">
+      <div class="fbar">
+        <span class="dot" style="background:#ff5f57"></span>
+        <span class="dot" style="background:#febc2e"></span>
+        <span class="dot" style="background:#28c840"></span>
+        <span class="url">tempo.local<span id="urlPath">/dashboard/overview</span></span>
+      </div>
+      <div class="stage" id="stage">
+        <img class="on" src="img/dash-overview.png" alt="Overview screen: participant totals, a histogram of prompts delivered per participant, and completion by study phase" loading="lazy">
+        <img src="img/dash-ema.png" alt="Momentary assessment tracker: one row per participant showing which of their scheduled prompts have been answered" loading="lazy">
+        <img src="img/dash-participants.png" alt="Participant roster with each participant's position in their own sequence" loading="lazy">
+        <img src="img/dash-queue.png" alt="Outgoing queue grouped by day, listing scheduled messages per participant" loading="lazy">
+        <img src="img/dash-sent.png" alt="Sent log listing each delivered message with channel, recipient and status" loading="lazy">
+      </div>
+    </div>
+    <div class="picks" id="picks" role="tablist">
+      <button class="pick on" role="tab" data-path="/dashboard/overview">
+        <b>Overview</b><em>Totals, a histogram of prompts delivered per participant, and completion by study phase.</em></button>
+      <button class="pick" role="tab" data-path="/dashboard/ema">
+        <b>Per-subject sequence</b><em>One row per participant across their own sampling grid &mdash; which prompts landed, which were missed, where they are now.</em></button>
+      <button class="pick" role="tab" data-path="/dashboard/participants">
+        <b>Roster</b><em>Every participant with their position in the sequence and what is still owed.</em></button>
+      <button class="pick" role="tab" data-path="/dashboard/queue">
+        <b>Queue</b><em>Scheduled messages grouped by day, before they go.</em></button>
+      <button class="pick" role="tab" data-path="/dashboard/sent">
+        <b>Sent log</b><em>What already went out, with channel, recipient and status.</em></button>
+    </div>
+  </div>
+
+  <p data-rev>
     Access is a shared password behind a signed cookie, checked in middleware on every route.
     A daily job reconciles what was scheduled against what the ledger recorded and flags
     anything missing.
@@ -572,145 +835,305 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
 </div>
 
 <footer><div class="wrap">
-  <div class="cite">
+  <div class="cite" data-rev>
     <strong>Citing TEMPO.</strong> Zweben, D. (2026). <em>TEMPO (Tracking, Engagement, Messaging
     &amp; Participant Outreach): automated survey scheduling and participant messaging for
     longitudinal studies</em> [Computer software]. Zenodo.
     <a href="https://doi.org/10.5281/zenodo.22925367">https://doi.org/10.5281/zenodo.22925367</a>
   </div>
-  <p style="max-width:44rem">MIT licensed &middot; <a href="https://github.com/dzweben/tempo">github.com/dzweben/tempo</a></p>
+  <div class="fbot">
+    <span>MIT licensed</span>
+    <a href="https://github.com/dzweben/tempo">github.com/dzweben/tempo</a>
+    <a href="https://doi.org/10.5281/zenodo.22925367">10.5281/zenodo.22925367</a>
+  </div>
 </div></footer>
-
 <script>
 (function(){
-  var out=document.getElementById('out'), form=document.getElementById('form'),
-      inp=document.getElementById('in'), clk=document.getElementById('clk');
-  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var $  = function(s,r){return (r||document).querySelector(s)};
+var $$ = function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 
-  function clock(){var d=new Date();clk.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()]
-    .map(function(n){return String(n).padStart(2,'0')}).join(':');}
-  clock(); setInterval(clock,1000);
+/* ===== 1. chrome height -> anchor offsets ===================== */
+var bar = $('.topbar');
+function sizeBar(){
+  var h = Math.round(bar.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--topH', h + 'px');
+  $$('section').forEach(function(s){ s.style.scrollMarginTop = h + 'px'; });
+  return h;
+}
+var barH = sizeBar();
+addEventListener('resize', function(){ barH = sizeBar(); }, {passive:true});
 
-  function line(html,cls){
-    var p=document.createElement('div');
-    p.className='ln'+(cls?' '+cls:''); p.innerHTML=html;
-    out.appendChild(p); out.scrollTop=out.scrollHeight; return p;
+/* ===== 2. scrollspy: single source of truth, locked on click == */
+var IDS   = ['top','how','code','ema','server'];
+var navA  = $$('.navlinks a').filter(function(a){return a.hash});
+var spineA= $$('.spine .snode');
+var lock  = 0;                       /* suppress spy while a click-scroll settles */
+
+function markActive(id){
+  navA.forEach(function(a){ a.classList.toggle('on', a.hash === '#'+id); });
+  spineA.forEach(function(a){ a.classList.toggle('on', a.hash === '#'+id); });
+}
+function currentId(){
+  var probe = scrollY + barH + 24;
+  /* bottom of page always resolves to the last section */
+  if (scrollY + innerHeight >= document.body.scrollHeight - 4) return IDS[IDS.length-1];
+  var found = IDS[0];
+  for (var i=1;i<IDS.length;i++){
+    var el = document.getElementById(IDS[i]);
+    if (el && (el.getBoundingClientRect().top + scrollY) <= probe) found = IDS[i];
   }
-  function esc(t){return String(t).replace(/[&<>]/g,function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  return found;
+}
+var prog = document.getElementById('prog');
+var sfill= document.getElementById('sfill');
+var rail = $('.spine .rail');
+function onScroll(){
+  var max = document.body.scrollHeight - innerHeight;
+  var p = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+  prog.style.width = (p*100).toFixed(2) + '%';
+  if (rail) sfill.style.height = (p * rail.getBoundingClientRect().height) + 'px';
+  if (Date.now() > lock) markActive(currentId());
+}
+addEventListener('scroll', onScroll, {passive:true});
 
-  var SLOTS=[
-    {t:'08:40', w:'check-in prompt · day 6',      st:'sent', lat:2},
-    {t:'10:00', w:'visit reminder · 3 days out',  st:'sent', lat:1},
-    {t:'17:00', w:'monthly survey · follow-up 1', st:'sent', lat:3},
-    {t:'18:01', w:'check-in prompt · day 6',      st:'queued'},
-    {t:'19:36', w:'compensation notice',               st:'queued'}
-  ];
-  function badge(s){
-    if(s.st==='sent')    return '<span class="badge b-d">sent +'+s.lat+'s</span>';
-    if(s.st==='sending') return '<span class="badge b-s">sending</span>';
-    return '<span class="badge b-q">queued</span>';
-  }
-  function renderQueue(){
-    SLOTS.forEach(function(s){
-      line('<span class="row"><span class="vio">'+s.t+'</span>'+
-           '<span class="dim">'+esc(s.w)+'</span>'+badge(s)+'</span>');
+/* a nav click sets its own target immediately and holds it there,
+   so passing over intermediate sections cannot flicker the highlight */
+navA.concat(spineA).forEach(function(a){
+  a.addEventListener('click', function(){
+    var id = a.hash.slice(1);
+    lock = Date.now() + (RM ? 0 : 900);
+    markActive(id);
+  });
+});
+onScroll();
+
+/* ===== 3. reveal ============================================== */
+if (RM) { $$('[data-rev]').forEach(function(n){n.classList.add('in')}); }
+else {
+  var ro = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); ro.unobserve(e.target); } });
+  }, {rootMargin:'0px 0px -8% 0px', threshold:.08});
+  $$('[data-rev]').forEach(function(n){ ro.observe(n); });
+}
+
+/* ===== 4. code windows: tabs, gutters, copy =================== */
+$$('.cw').forEach(function(cw){
+  var tabs = $$('.tab', cw), panes = $$('.pane', cw), copy = $('.copy', cw);
+  panes.forEach(function(p){
+    var code = $('pre', p).textContent.replace(/\n$/,'').split('\n');
+    $('.gut', p).textContent = code.map(function(_,i){return i+1}).join('\n');
+  });
+  tabs.forEach(function(t,i){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x,j){ x.classList.toggle('on', i===j); x.setAttribute('aria-selected', i===j); });
+      panes.forEach(function(p,j){ p.classList.toggle('on', i===j); });
+      copy.textContent = 'copy'; copy.classList.remove('done');
     });
-  }
+  });
+  copy.addEventListener('click', function(){
+    var open = $('.pane.on pre', cw);
+    navigator.clipboard.writeText(open.textContent).then(function(){
+      copy.textContent = 'copied'; copy.classList.add('done');
+      setTimeout(function(){ copy.textContent='copy'; copy.classList.remove('done'); }, 1600);
+    }, function(){ copy.textContent = 'select + copy'; });
+  });
+});
 
-  var BOOT=[
-    '<span class="wh">$ tempo start</span>',
-    '  pipeline   <span class="ok">connected</span>  <span class="dim">survey platform · 419 records</span>',
-    '  sender     <span class="ok">armed</span>      <span class="dim">sms + email · dry-run off</span>',
-    '  ledger     <span class="ok">ready</span>      <span class="dim">append-only · 3 dedup layers</span>',
-    '<span class="dim">watching 5 slots — next at 18:01</span>'
-  ];
-  function boot(done){
-    if(reduce||sessionStorage.getItem('tempo-booted')){
-      BOOT.forEach(function(b){line(b)}); done(); return;
+/* ===== 5. dashboard showcase ================================== */
+(function(){
+  var picks = $$('#picks .pick'), shots = $$('#stage img'), path = document.getElementById('urlPath');
+  picks.forEach(function(b,i){
+    b.addEventListener('click', function(){
+      picks.forEach(function(x,j){ x.classList.toggle('on', i===j); x.setAttribute('aria-selected', i===j); });
+      shots.forEach(function(s,j){ s.classList.toggle('on', i===j); });
+      path.textContent = b.dataset.path;
+    });
+  });
+})();
+
+/* ===== 6. sampling-grid ribbon ================================ */
+(function(){
+  var track = document.getElementById('track'); if (!track) return;
+  var DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
+  /* 25 slots: hour-of-day per day, clear of quiet hours */
+  var GRID = [[9.2,13.5,19.1],[8.6,12.2,16.8,20.4],[10.1,14.9,18.2],[8.9,11.7,15.3,19.8],
+              [9.6,13.1,17.5],[10.8,14.2,18.9,20.9],[9.4,12.8,16.1,19.6]];
+  var TOTAL = 7*24, QUIET_END = 7.5, QUIET_START = 21.5;
+  var pct = function(h){ return (h/TOTAL)*100; };
+  var html = '', slots = [];
+
+  for (var d=0; d<7; d++){
+    html += '<div class="nb" style="left:'+pct(d*24)+'%;width:'+pct(QUIET_END)+'%"></div>';
+    html += '<div class="nb" style="left:'+pct(d*24+QUIET_START)+'%;width:'+pct(24-QUIET_START)+'%"></div>';
+    if (d) html += '<div class="dsep" style="left:'+pct(d*24)+'%"></div>';
+    html += '<div class="dlab" style="left:'+pct(d*24+12)+'%">'+DAYS[d]+'</div>';
+  }
+  html += '<div class="base"></div>';
+  GRID.forEach(function(hours,d){
+    hours.forEach(function(h){
+      var x = pct(d*24+h);
+      var stem = Math.round(26 + ((h-8)/13.5)*86);        /* stem height encodes time of day */
+      html += '<div class="slot" data-x="'+x+'" style="left:'+x+'%">'
+            +   '<span class="stem" style="height:'+stem+'px"></span>'
+            +   '<span class="pt" style="bottom:'+(stem-4.5)+'px"></span>'
+            +   '<span class="ring" style="bottom:'+(stem-5)+'px"></span>'
+            + '</div>';
+      slots.push(x);
+    });
+  });
+  html += '<div class="now" id="now"></div>';
+  track.innerHTML = html;
+
+  var nowEl = document.getElementById('now'),
+      slotEls = $$('.slot', track),
+      roSent = document.getElementById('roSent'),
+      roQ    = document.getElementById('roQ'),
+      roLat  = document.getElementById('roLat'),
+      N      = slotEls.length;
+
+  if (RM){ nowEl.style.display='none'; slotEls.forEach(function(s){s.classList.add('fired')});
+           roSent.textContent=N; roQ.textContent=0; roLat.textContent='+2.4s'; return; }
+
+  var SWEEP = 17000, HOLD = 2600, t0 = performance.now(), sent = 0, live = false;
+
+  new IntersectionObserver(function(es){ live = es[0].isIntersecting; },{threshold:.12}).observe(track);
+
+  function reset(){
+    slotEls.forEach(function(s){ s.classList.remove('fired') });
+    sent = 0; roSent.textContent = '0'; roQ.textContent = N; roLat.textContent = '—';
+  }
+  function frame(now){
+    requestAnimationFrame(frame);
+    if (!live) { t0 = now; return; }
+    var e = (now - t0) % (SWEEP + HOLD);
+    if (e > SWEEP){ nowEl.style.left = '100%'; return; }
+    if (e < 40 && sent) reset();
+    var p = (e / SWEEP) * 100;
+    nowEl.style.left = p + '%';
+    for (var i=0;i<N;i++){
+      if (!slotEls[i].classList.contains('fired') && slots[i] <= p){
+        slotEls[i].classList.add('fired');
+        sent++;
+        roSent.textContent = sent;
+        roQ.textContent = N - sent;
+        roLat.textContent = '+' + (1.9 + Math.random()*1.7).toFixed(1) + 's';
+      }
     }
-    var budget=1300, i=0, step=budget/BOOT.length, t0=performance.now();
-    (function tick(){
-      var now=performance.now();
-      while(i<BOOT.length && (now-t0)>=i*step){ line(BOOT[i]); i++; }
-      if(i<BOOT.length) requestAnimationFrame(tick);
-      else { try{sessionStorage.setItem('tempo-booted','1')}catch(e){} done(); }
-    })();
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ===== 7. live terminal ======================================= */
+(function(){
+  var out = document.getElementById('out'), form = document.getElementById('form'),
+      inp = document.getElementById('in'), clk = document.getElementById('clk');
+  if (!out) return;
+
+  function tick(){ var d=new Date();
+    clk.textContent = [d.getHours(),d.getMinutes(),d.getSeconds()]
+      .map(function(n){return String(n).padStart(2,'0')}).join(':'); }
+  tick(); setInterval(tick,1000);
+
+  function line(html, cls){
+    var p = document.createElement('div');
+    p.className = 'ln' + (cls ? ' '+cls : ''); p.innerHTML = html;
+    out.appendChild(p); out.scrollTop = out.scrollHeight;
+    while (out.children.length > 140) out.removeChild(out.firstChild);
+    return p;
+  }
+  function stamp(){ var d=new Date();
+    return [d.getHours(),d.getMinutes(),d.getSeconds()]
+      .map(function(n){return String(n).padStart(2,'0')}).join(':'); }
+  function ev(badge,bcls,body,right){
+    return line('<span class="row"><span class="dim">'+stamp()+'</span>'
+      + '<span><span class="badge '+bcls+'">'+badge+'</span> '+body+'</span>'
+      + '<span class="dim">'+(right||'')+'</span></span>');
   }
 
-  function fire(){
-    var next=null;
-    for(var i=0;i<SLOTS.length;i++){ if(SLOTS[i].st==='queued'){ next=SLOTS[i]; break; } }
-    if(!next){ for(var j=3;j<SLOTS.length;j++){ SLOTS[j].st='queued'; delete SLOTS[j].lat; } return; }
-    next.st='sending';
-    line('<span class="dim">'+next.t+'</span> <span class="vio">claim</span> '+
-         '<span class="dim">'+esc(next.w)+' — lock acquired</span>');
-    setTimeout(function(){
-      var lat=2+Math.floor(Math.random()*3);
-      next.st='sent'; next.lat=lat;
-      line('<span class="dim">'+next.t+'</span> <span class="ok">sent</span>  '+
-           '<span class="dim">sms → +1 555 0'+(100+Math.floor(Math.random()*800))+
-           ' · <span class="cy">+'+lat+'s</span> past slot</span>');
-      line('<span class="dim">       ledger ← 1 row · at-most-once held</span>');
-    }, reduce?0:900);
+  var PIDS = ['p-0417','p-1182','p-0863','p-2049','p-1375','p-0628','p-1930','p-0744'];
+  var pid  = function(){ return PIDS[Math.floor(Math.random()*PIDS.length)] };
+  var FORMS= ['ema_prompt_12','followup_1','visit_reminder','weekly_checkin','ema_prompt_13'];
+  var form_= function(){ return FORMS[Math.floor(Math.random()*FORMS.length)] };
+  var lat  = function(){ return (1.9 + Math.random()*1.7).toFixed(1)+'s' };
+
+  var BOOT = [
+    ['<span class="dim">$</span> <span class="wh">tempo run --window 15m</span>', 0],
+    ['<span class="dim">reading export … <span class="cy">132 records</span></span>', 0],
+    ['<span class="dim">resolving survey links … <span class="cy">ok</span></span>', 0],
+    ['<span class="dim">expanding 9 declarations … <span class="cy">41 dated rows</span></span>', 0],
+    ['<span class="dim">quiet hours 21:30–07:30 · opt-outs <span class="cy">3</span> · cap 200/run</span>', 0],
+    ['<span class="dim">───────────────────────────────────</span>', 0]
+  ];
+
+  var i = 0, budget = 1300, step = budget / BOOT.length;
+  var booted = false;
+  try { booted = sessionStorage.getItem('tempo-booted') === '1'; } catch(e){}
+
+  function emit(){
+    var r = Math.random();
+    if (r < .34)      ev('QUEUED','b-q','<span class="wh">'+pid()+'</span> <span class="dim">'+form_()+'</span>','due '+(8+Math.floor(Math.random()*12))+':'+(Math.random()<.5?'00':'30'));
+    else if (r < .74) ev('SENT','b-s','<span class="wh">'+pid()+'</span> <span class="dim">'+(Math.random()<.65?'sms':'email')+' → '+(Math.random()<.65?'+1••••'+(1000+Math.floor(Math.random()*8999)):'•••@•••')+'</span>', lat());
+    else if (r < .88) ev('LEDGER','b-d','<span class="dim">appended · '+form_()+'</span>','');
+    else              line('<span class="row"><span class="dim">'+stamp()+'</span><span class="dim">skipped <span class="co">'+pid()+'</span> · past grace window</span><span class="dim">—</span></span>');
   }
 
-  var CMD={
-    help:function(){
-      line('<span class="wh">commands</span>');
-      line('  <span class="cy">queue</span>    upcoming sends on the schedule');
-      line('  <span class="cy">send</span>     fire the next due slot');
-      line('  <span class="cy">ledger</span>   what already went out');
-      line('  <span class="cy">status</span>   pipeline + sender state');
-      line('  <span class="cy">clear</span>    clear the console');
-      line('<span class="dim">a demo of the real CLI surface — nothing here leaves the page.</span>');
+  function boot(){
+    if (i < BOOT.length){ line(BOOT[i][0]); i++; setTimeout(boot, booted ? 0 : step); return; }
+    try { sessionStorage.setItem('tempo-booted','1'); } catch(e){}
+    /* seed a full screen of history so the console never opens half-empty */
+    for (var n = 0; n < 13; n++) emit();
+    setTimeout(loop, 2600);
+  }
+
+  function loop(){ emit(); setTimeout(loop, 7000 + Math.random()*5000); }
+  setTimeout(boot, booted ? 0 : 280);
+
+  var CMD = {
+    help: function(){
+      line('<span class="dim">commands</span>');
+      line('<span class="cy">queue</span>   <span class="dim">what is owed in the look-ahead window</span>');
+      line('<span class="cy">send</span>    <span class="dim">drain the queue (dry-run)</span>');
+      line('<span class="cy">ledger</span>  <span class="dim">tail the append-only log</span>');
+      line('<span class="cy">status</span>  <span class="dim">guards and integration health</span>');
+      line('<span class="cy">clear</span>   <span class="dim">clear the console</span>');
     },
-    queue:function(){ line('<span class="wh">5 slots today</span>'); renderQueue(); },
-    send:function(){ line('<span class="dim">$ tempo send --next</span>'); fire(); },
-    ledger:function(){
-      line('<span class="wh">ledger — last rows</span>');
-      SLOTS.filter(function(s){return s.st==='sent'}).forEach(function(s){
-        line('  <span class="dim">'+s.t+'</span> <span class="ok">sent</span> '+
-             '<span class="dim">'+esc(s.w)+' · +'+s.lat+'s</span>');
-      });
-      line('<span class="dim">  duplicate attempts blocked: 0 (claim · ledger · carrier)</span>');
+    queue: function(){
+      line('<span class="dim">4 rows inside the 15m window</span>');
+      ['17:00 followup_1','17:00 weekly_checkin','17:15 ema_prompt_12','17:30 visit_reminder']
+        .forEach(function(r){ line('<span class="dim">  '+r.split(' ')[0]+'</span>  <span class="wh">'+pid()+'</span>  <span class="dim">'+r.split(' ')[1]+'</span>'); });
     },
-    status:function(){
-      line('  pipeline   <span class="ok">ok</span>    <span class="dim">last run 4m ago</span>');
-      line('  sender     <span class="ok">live</span>  <span class="dim">quiet hours 08:00–21:30</span>');
-      line('  latency    <span class="cy">2–4s</span>  <span class="dim">median past the scheduled second</span>');
+    send: function(){
+      line('<span class="dim">dry-run · nothing will transmit</span>');
+      var n = 0, t = setInterval(function(){
+        if (n++ > 3){ clearInterval(t); line('<span class="ok">4 would send · 0 duplicates · 0 unresolved links</span>'); return; }
+        ev('SENT','b-s','<span class="wh">'+pid()+'</span> <span class="dim">'+(n%2?'sms':'email')+' → dry-run</span>', lat());
+      }, 420);
     },
-    clear:function(){ out.innerHTML=''; }
+    ledger: function(){
+      line('<span class="dim">tail -4 ledger</span>');
+      for (var n=0;n<4;n++)
+        line('<span class="dim">'+pid()+'|'+form_()+'|2026-10-21T'+(9+n)+':00|'+(n%2?'sms':'email')+'|•••</span>');
+    },
+    status: function(){
+      line('<span class="ok">✓</span> <span class="dim">survey platform · export ok, links resolving</span>');
+      line('<span class="ok">✓</span> <span class="dim">sms provider · reachable, history check on</span>');
+      line('<span class="ok">✓</span> <span class="dim">smtp · authenticated, pooled</span>');
+      line('<span class="ok">✓</span> <span class="dim">guards · quiet hours, opt-outs, per-run cap, kill switch</span>');
+      line('<span class="ok">✓</span> <span class="dim">dedup · ledger + claim + provider history</span>');
+    },
+    clear: function(){ out.innerHTML = ''; }
   };
 
-  form.addEventListener('submit',function(e){
+  form.addEventListener('submit', function(e){
     e.preventDefault();
-    var raw=inp.value.trim(); if(!raw) return;
-    inp.value='';
-    line('<span class="ps1">tempo</span><span class="ps2">›</span> '+esc(raw),'wh');
-    var parts=raw.toLowerCase().split(/\s+/);
-    var cmd=parts[0]==='tempo'?(parts[1]||''):parts[0];
-    if(CMD[cmd]) CMD[cmd]();
-    else line('<span class="co">'+esc(cmd)+'</span><span class="dim">: unknown — try </span><span class="cy">help</span>');
+    var v = inp.value.trim().toLowerCase(); inp.value = '';
+    if (!v) return;
+    line('<span class="ps1">tempo</span><span class="ps2">&rsaquo;</span> <span class="wh">'+
+         v.replace(/[<>&]/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]})+'</span>');
+    (CMD[v] || function(){ line('<span class="co">'+v+': not a command</span> <span class="dim">· try help</span>'); })();
   });
-
-  boot(function(){
-    renderQueue();
-    if(!reduce) setInterval(fire, 9000);
-  });
-
-  // highlight the nav link for whatever section is on screen
-  var links=[].slice.call(document.querySelectorAll('.navlinks a[href^="#"]'));
-  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
-  if(secs.length && 'IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){
-      es.forEach(function(e){
-        var a=links.filter(function(l){return l.getAttribute('href')==='#'+e.target.id})[0];
-        if(a && e.isIntersecting){ links.forEach(function(l){l.classList.remove('on')}); a.classList.add('on'); }
-      });
-    },{rootMargin:'-20% 0px -70% 0px'});
-    secs.forEach(function(x){io.observe(x)});
-  }
+})();
 })();
 </script>
 </body>
