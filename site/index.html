@@ -119,8 +119,6 @@ h1 svg{width:clamp(220px,24vw,272px);height:auto;display:block;color:var(--ink);
 @media (min-width:881px){.sub{white-space:nowrap}}
 .lede{font-size:1.07rem;line-height:1.62;color:var(--ink2);max-width:33rem;margin:0 0 .9rem}
 .lede.sm{font-size:.97rem;color:var(--muted);max-width:32rem}
-.grad{background:linear-gradient(95deg,var(--violet-hot),var(--cyan));
-  -webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
 .cta{display:flex;gap:11px;flex-wrap:wrap;margin-top:30px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:9px;
   font-weight:600;font-size:.92rem;text-decoration:none;transition:all .16s var(--ease)}
@@ -510,13 +508,14 @@ try{ if ('IntersectionObserver' in window &&
       </svg></h1>
     <div class="sub" data-rev style="--d:120ms">tracking &middot; engagement &middot; messaging &middot; participant outreach</div>
     <p class="lede" data-rev style="--d:170ms">
-      Your survey platform already holds the roster, the dates and a completion flag on every
-      form. Messaging APIs already send texts and email.
-      <span class="grad">TEMPO is the part in between</span> &mdash; working out who is due a
-      message, sending it on the scheduled second, and writing down every one.
+      <strong>TEMPO sends scheduled messages to study participants.</strong> It reads a study's
+      roster, date fields and per-form completion flags out of a survey platform, works out
+      which participants are owed a message and when, sends it by SMS or email, and records
+      every send.
     </p>
     <p class="lede sm" data-rev style="--d:220ms">
-      Declared once. Runs for the length of the study, unattended.
+      The same mechanism covers a reminder due on a given day and an EMA prompt that has to
+      fire at an exact minute.
     </p>
     <div class="cta" data-rev style="--d:270ms">
       <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -545,11 +544,11 @@ try{ if ('IntersectionObserver' in window &&
 <section id="how">
   <div class="shead" data-rev>
     <div class="sidx">01</div>
-    <div><div class="kick">How it works</div><h2>Dates in, messages out</h2></div>
+    <div><div class="kick">How it works</div><h2>The pipeline</h2></div>
   </div>
   <p class="intro" data-rev>
-    Each message is declared once. The pipeline expands the declarations against the current
-    export into dated rows. Senders drain that queue on a clock.
+    Each message is declared once. The pipeline expands those declarations against the current
+    export into dated rows, and the senders work through that queue on a fixed schedule.
   </p>
 
   <div class="flow" data-rev>
@@ -561,7 +560,7 @@ try{ if ('IntersectionObserver' in window &&
 
   <p data-rev>
     The build here uses REDCap, OpenPhone and Gmail SMTP. Swapping any of them means
-    reimplementing a few calls &mdash; Qualtrics, Twilio and SES expose the same primitives.
+    reimplementing a few calls; Qualtrics, Twilio and SES offer the same operations.
   </p>
   <div class="tw" data-rev>
   <table>
@@ -577,7 +576,7 @@ try{ if ('IntersectionObserver' in window &&
 <section id="code">
   <div class="shead" data-rev>
     <div class="sidx">02</div>
-    <div><div class="kick">Sample code</div><h2>What it looks like in practice</h2></div>
+    <div><div class="kick">Sample code</div><h2>Declaring and sending a message</h2></div>
   </div>
   <p class="intro" data-rev>
     Field names below are placeholders for your own event and instrument names.
@@ -615,7 +614,7 @@ try{ if ('IntersectionObserver' in window &&
   message: <span class="s">"Hi [baseline_arm_1][first_name], your follow-up is open: "</span> +
            <span class="s">"[followup_arm_1][survey-link:followup_1]"</span>,
 }</code></pre></div>
-      <div class="cwf"><b>Declaring a message.</b> One entry: when it is owed, when it fires, where it goes, what it says.</div>
+      <div class="cwf"><b>Declaring a message.</b> A single entry sets the condition under which the message is owed, the send time, the destination fields and the body.</div>
     </div>
 
     <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> anchor = participant.fields[<span class="s">"baseline_date"</span>];   <span class="c">// "2026-03-04"</span>
@@ -627,7 +626,7 @@ try{ if ('IntersectionObserver' in window &&
   sends.push(atStudyTime(addDays(anchor, offsetDays + n * everyDays), <span class="s">"17:00"</span>));
 }
 <span class="c">// → 2026-03-18T17:00, 2026-03-25T17:00, 2026-04-01T17:00</span></code></pre></div>
-      <div class="cwf"><b>Computing the send time.</b> Resolved per participant against their own dates. Repeats stop when the completion flag flips, so responders are not chased.</div>
+      <div class="cwf"><b>Computing the send time.</b> The send time resolves per participant against their own dates, and repeats stop once the completion flag flips, so responders are not chased.</div>
     </div>
 
     <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">await</span> fetch(<span class="s">"https://api.openphone.com/v1/messages"</span>, {
@@ -636,7 +635,7 @@ try{ if ('IntersectionObserver' in window &&
   body: JSON.stringify({ content: body, from: FROM_NUMBER, to: [e164] }),
   signal: AbortSignal.timeout(<span class="s">30_000</span>),
 });</code></pre></div>
-      <div class="cwf"><b>Sending a text.</b> One HTTP call. Any provider with a send endpoint drops in here.</div>
+      <div class="cwf"><b>Sending a text.</b> A single HTTP call, so any provider that exposes a send endpoint fits here.</div>
     </div>
 
     <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="k">const</span> mailer = nodemailer.createTransport({
@@ -645,13 +644,14 @@ try{ if ('IntersectionObserver' in window &&
 });
 
 <span class="k">await</span> mailer.sendMail({ from, to: recipient, subject, text: body });</code></pre></div>
-      <div class="cwf"><b>Sending an email.</b> Pooled SMTP, so a batch reuses one connection.</div>
+      <div class="cwf"><b>Sending an email.</b> SMTP is pooled, so a batch of messages reuses one connection.</div>
     </div>
   </div>
 
   <div class="sublab" data-rev>not sending it twice</div>
   <p data-rev>
-    Sending cannot be undone, so at-most-once is enforced three separate ways.
+    A message that has gone out cannot be recalled, so at-most-once is enforced in three
+    independent ways.
   </p>
   <div class="tw" data-rev>
   <table>
@@ -674,8 +674,8 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">Momentary assessment</div><h2>Prompts on the minute</h2></div>
   </div>
   <p class="intro" data-rev>
-    EMA prompts ask what someone is doing right now, so they have to arrive at the minute
-    they were scheduled for. Late is not useful.
+    EMA prompts ask what someone is doing at the time they are asked, so they have to arrive
+    at the scheduled minute to be usable.
   </p>
 
   <div class="sched" data-rev id="sched">
@@ -727,7 +727,7 @@ try{ if ('IntersectionObserver' in window &&
     surveyLink: <span class="k">await</span> resolveLink(participant, slot.form),
   });
 }</code></pre></div>
-      <div class="cwf"><b>Expanding the grid.</b> Fixed weekday and clock-time slots, anchored to each participant's own start date.</div>
+      <div class="cwf"><b>Expanding the grid.</b> Slots are fixed by weekday and clock time, then anchored to each participant's own start date.</div>
     </div>
     <div class="pane" role="tabpanel"><div class="cwb"><div class="gut"></div><pre><code><span class="c">// Wait out the remainder in-process, then claim and fire.</span>
 <span class="k">const</span> waitMs = slot.sendAt - Date.now();
@@ -737,7 +737,7 @@ try{ if ('IntersectionObserver' in window &&
   <span class="k">await</span> sendSMS(slot.phone, render(slot));
   <span class="k">await</span> ledger.append({ ...slot, status: <span class="s">"sent"</span>, latencySec: <span class="s">2</span> });
 }</code></pre></div>
-      <div class="cwf"><b>Hitting the second.</b> Schedulers are not punctual, so the sender runs on a coarse clock, picks up any slot inside its look-ahead window, and waits in-process until the exact second.</div>
+      <div class="cwf"><b>Waiting out the remainder.</b> Schedulers are not punctual, so the sender runs on a coarse clock, picks up any slot inside its look-ahead window, and waits in-process until the exact second.</div>
     </div>
   </div>
 
@@ -751,12 +751,11 @@ try{ if ('IntersectionObserver' in window &&
 <section id="server">
   <div class="shead" data-rev>
     <div class="sidx">04</div>
-    <div><div class="kick">The server</div><h2>A dashboard over the whole thing</h2></div>
+    <div><div class="kick">The server</div><h2>The dashboard</h2></div>
   </div>
   <p class="intro" data-rev>
-    The dashboard reads the same files the senders write &mdash; no second database. It shows both
-    aggregate distributions and where each individual participant sits inside their own sequence.
-    Screens below run on synthetic data.
+    The dashboard shows what is scheduled, what has already gone out, and how far each
+    participant has got through their own sequence. Screens below run on synthetic data.
   </p>
 
   <div class="shw" data-rev>
@@ -769,7 +768,7 @@ try{ if ('IntersectionObserver' in window &&
       </div>
       <div class="stage" id="stage">
         <img class="on" src="img/dash-overview.png" alt="Overview screen: participant totals, a histogram of prompts delivered per participant, and completion by study phase" loading="lazy">
-        <img src="img/dash-ema.png" alt="Momentary assessment tracker: one row per participant showing which of their scheduled prompts have been answered" loading="lazy">
+        <img src="img/dash-ema.png" alt="Momentary assessment tracker with one participant expanded, showing each of their 25 scheduled prompts marked answered or missed" loading="lazy">
         <img src="img/dash-participants.png" alt="Participant roster with each participant's position in their own sequence" loading="lazy">
         <img src="img/dash-queue.png" alt="Outgoing queue grouped by day, listing scheduled messages per participant" loading="lazy">
         <img src="img/dash-sent.png" alt="Sent log listing each delivered message with channel, recipient and status" loading="lazy">
@@ -779,11 +778,11 @@ try{ if ('IntersectionObserver' in window &&
       <button type="button" class="pick on" role="tab" aria-selected="true" data-path="/dashboard/overview">
         <b>Overview</b><em>Totals, a histogram of prompts delivered per participant, and completion by study phase.</em></button>
       <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/ema">
-        <b>Per-subject sequence</b><em>One row per participant across their own sampling grid &mdash; which prompts landed, which were missed, where they are now.</em></button>
+        <b>Per-subject sequence</b><em>Open a participant to see all 25 of their scheduled prompts: green where they answered, red where the slot passed unanswered.</em></button>
       <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/participants">
         <b>Roster</b><em>Every participant with their position in the sequence and what is still owed.</em></button>
       <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/queue">
-        <b>Queue</b><em>Scheduled messages grouped by day, before they go.</em></button>
+        <b>Queue</b><em>Scheduled messages grouped by day, with the participant and form for each.</em></button>
       <button type="button" class="pick" role="tab" aria-selected="false" data-path="/dashboard/sent">
         <b>Sent log</b><em>What already went out, with channel, recipient and status.</em></button>
     </div>

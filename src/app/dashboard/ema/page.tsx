@@ -191,21 +191,30 @@ function Row({ pid, ema, expanded, onToggle, done, scheduled, meets }: {
         <tr>
           <td colSpan={7} className="bg-gray-50 px-6 py-4 border-b border-gray-200">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {ema.prompts.map(p => (
-                <div
-                  key={p.key}
-                  className={`flex items-center justify-between gap-3 px-3 py-2 rounded ${
-                    p.complete ? "bg-emerald-50 text-emerald-800" :
-                    p.scheduledAt ? "bg-white border border-gray-200" :
-                    "bg-gray-100 text-gray-400"
-                  }`}
-                >
-                  <span className="text-xs font-medium">{p.dayLabel} · {p.timeLabel}</span>
-                  <span className="text-xs font-mono">
-                    {p.complete ? "✓" : p.scheduledAt ? formatDateTime(p.scheduledAt).slice(0, -3) : "—"}
-                  </span>
-                </div>
-              ))}
+              {ema.prompts.map(p => {
+                // A prompt whose slot has passed without a response is a miss,
+                // not a pending send — they used to render identically, so the
+                // sequence could not be scanned for gaps.
+                const missed = !p.complete && !!p.scheduledAt
+                  && new Date(p.scheduledAt).getTime() < Date.now();
+                return (
+                  <div
+                    key={p.key}
+                    className={`flex items-center justify-between gap-3 px-3 py-2 rounded ${
+                      p.complete ? "bg-emerald-50 text-emerald-800" :
+                      missed ? "bg-rose-50 text-rose-700 border border-rose-200" :
+                      p.scheduledAt ? "bg-white border border-gray-200" :
+                      "bg-gray-100 text-gray-400"
+                    }`}
+                    title={p.complete ? "answered" : missed ? "missed" : p.scheduledAt ? "scheduled" : "not scheduled"}
+                  >
+                    <span className="text-xs font-medium">{p.dayLabel} · {p.timeLabel}</span>
+                    <span className="text-xs font-mono">
+                      {p.complete ? "✓" : missed ? "✗" : p.scheduledAt ? formatDateTime(p.scheduledAt).slice(0, -3) : "—"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </td>
         </tr>
