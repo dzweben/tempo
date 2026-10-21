@@ -166,23 +166,8 @@ h1 svg{width:clamp(220px,24vw,272px);height:auto;display:block;color:var(--ink);
 .cprompt input::placeholder{color:#4e4870}
 .hint{font-size:.62rem;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
 
-/* ---------- full-bleed stat band ---------- */
-.band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  background:linear-gradient(180deg,rgba(18,15,34,.5),rgba(7,6,15,0));position:relative;z-index:1}
-.bandin{max-width:var(--w);margin:0 auto;padding:0 24px;display:grid;
-  grid-template-columns:repeat(4,1fr)}
-.bcell{padding:26px 22px 28px;border-left:1px solid var(--line)}
-.bcell:first-child{border-left:none;padding-left:0}
-.bval{font-family:var(--disp);font-size:2.1rem;font-weight:700;letter-spacing:-.05em;line-height:1;
-  background:linear-gradient(95deg,var(--cyan),var(--violet-hot));-webkit-background-clip:text;
-  background-clip:text;color:transparent}
-.blab{font-family:var(--mono);font-size:.64rem;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--muted);margin-top:8px}
-.bsub{font-size:.8rem;color:var(--ink2);margin-top:6px;line-height:1.5}
-
 /* ---------- sections ---------- */
-section{padding:78px 0;position:relative;scroll-margin-top:56px}
-section+section{border-top:1px solid var(--line)}
+section{padding:78px 0;position:relative;scroll-margin-top:56px;border-top:1px solid var(--line)}
 .shead{display:flex;gap:20px;align-items:flex-start;margin:0 0 28px}
 .sidx{font-family:var(--disp);font-weight:700;font-size:3rem;line-height:.82;letter-spacing:-.06em;
   color:transparent;-webkit-text-stroke:1px var(--line2);flex:none;padding-top:3px;
@@ -346,17 +331,10 @@ footer{padding:50px 0 76px;color:var(--muted);font-size:.9rem;border-top:1px sol
   .cbody{height:244px}
   .hint{display:none}
   section{padding:58px 0}
-  .bandin{grid-template-columns:repeat(2,1fr)}
-  .bcell{padding:20px 16px 22px}
-  .bcell:nth-child(3){border-left:none;padding-left:0}
-  .bcell:nth-child(3),.bcell:nth-child(4){border-top:1px solid var(--line)}
   .shead{gap:14px}
   .sidx{font-size:2.1rem}
 }
 @media (max-width:460px){
-  .bandin{grid-template-columns:1fr}
-  .bcell{border-left:none!important;padding-left:0!important;border-top:1px solid var(--line)}
-  .bcell:first-child{border-top:none}
   .sidx{display:none}
 }
 @media (prefers-reduced-motion:reduce){
@@ -563,30 +541,7 @@ try{ if ('IntersectionObserver' in window &&
     </form>
   </div>
 </header>
-</div>
 
-<div class="band">
-  <div class="bandin">
-    <div class="bcell" data-rev>
-      <div class="bval">2&ndash;4s</div><div class="blab">prompt latency</div>
-      <div class="bsub">Measured past the scheduled second, written per message.</div>
-    </div>
-    <div class="bcell" data-rev style="--d:80ms">
-      <div class="bval">3&times;</div><div class="blab">dedup layers</div>
-      <div class="bsub">Ledger, claim-before-transmit, provider history.</div>
-    </div>
-    <div class="bcell" data-rev style="--d:160ms">
-      <div class="bval">SMS + email</div><div class="blab">channels</div>
-      <div class="bsub">Chosen per message by which contact field is present.</div>
-    </div>
-    <div class="bcell" data-rev style="--d:240ms">
-      <div class="bval">0</div><div class="blab">servers to run</div>
-      <div class="bsub">Anything that can call a URL on a schedule will do.</div>
-    </div>
-  </div>
-</div>
-
-<div class="wrap">
 <section id="how">
   <div class="shead" data-rev>
     <div class="sidx">01</div>
