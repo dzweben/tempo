@@ -6,6 +6,15 @@
 <title>TEMPO — scheduled participant outreach for longitudinal studies</title>
 <meta name="description" content="TEMPO reads a survey platform's exports, links, dates and completion flags, computes when each participant is owed a message, and sends it by SMS and email. Self-hosted, auditable, provider-agnostic.">
 <link rel="icon" href="img/icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="TEMPO — scheduled participant outreach for longitudinal studies">
+<meta property="og:description" content="Reads a survey platform's exports, links, dates and completion flags, computes when each participant is owed a message, and sends it by SMS and email.">
+<meta property="og:url" content="https://dzweben.github.io/tempo/">
+<meta property="og:image" content="https://dzweben.github.io/tempo/img/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://dzweben.github.io/tempo/img/og-card.png">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -41,6 +50,7 @@ body::after{
 }
 .wrap,.topbar{position:relative;z-index:1}
 .wrap{max-width:960px;margin:0 auto;padding-inline:22px}
+#top{scroll-margin-top:0}
 a{color:var(--cyan)}
 h1,h2,h3{font-family:var(--disp);letter-spacing:-.035em;line-height:1.08;margin:0;text-wrap:balance}
 code,pre{font-family:var(--mono)}
@@ -54,7 +64,8 @@ code,pre{font-family:var(--mono)}
   font-size:1.08rem;letter-spacing:-.04em;color:var(--ink);text-decoration:none}
 .brand img{display:block;filter:drop-shadow(0 0 7px rgba(139,92,246,.6))}
 .navlinks{display:flex;gap:17px;font-size:.88rem;font-weight:500}
-.navlinks a{color:var(--ink2);text-decoration:none;transition:color .15s}
+.navlinks a{color:var(--ink2);text-decoration:none;transition:color .15s;padding:4px 2px;border-bottom:1px solid transparent}
+.navlinks a.on{color:var(--cyan);border-bottom-color:var(--cyan)}
 .navlinks a:hover{color:var(--cyan);text-shadow:0 0 14px rgba(69,212,247,.6)}
 
 /* ---------- hero ---------- */
@@ -86,33 +97,42 @@ h1 svg{width:clamp(252px,32vw,330px);height:auto;display:block;color:var(--ink);
 .btn-g:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px);
   box-shadow:0 0 22px -6px rgba(69,212,247,.6)}
 
-/* ---------- live console ---------- */
+/* ---------- live terminal ---------- */
 .console{border:1px solid var(--line);border-radius:13px;background:
-  linear-gradient(180deg,rgba(23,19,48,.95),rgba(18,15,34,.95));
-  box-shadow:0 26px 70px -32px rgba(0,0,0,.95),0 0 0 1px rgba(139,92,246,.1);overflow:hidden}
-.chead{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--line);
-  background:rgba(10,8,22,.65)}
+  linear-gradient(180deg,rgba(20,16,42,.97),rgba(12,10,26,.97));
+  box-shadow:0 26px 70px -32px #000,0 0 0 1px rgba(139,92,246,.12),
+             0 0 60px -30px rgba(139,92,246,.5);overflow:hidden;display:flex;flex-direction:column}
+.chead{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);
+  background:rgba(8,6,20,.8);flex:none}
 .dot{width:9px;height:9px;border-radius:50%}
-.ctitle{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
+.ctitle{font-family:var(--mono);font-size:.67rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--muted);margin-left:6px}
-.clock{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--cyan);
-  text-shadow:0 0 12px rgba(69,212,247,.55)}
-.crow{display:grid;grid-template-columns:70px 1fr auto;gap:11px;align-items:center;
-  padding:9px 15px;border-bottom:1px solid rgba(36,29,68,.6);font-family:var(--mono);font-size:.76rem}
-.crow:last-child{border-bottom:none}
-.ct{color:var(--violet)}
-.cw{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pill{font-size:.63rem;letter-spacing:.07em;padding:2px 8px;border-radius:99px;white-space:nowrap}
-.ok{background:rgba(69,212,247,.12);color:var(--cyan);border:1px solid rgba(69,212,247,.3)}
-.wait{background:rgba(255,107,122,.1);color:var(--coral);border:1px solid rgba(255,107,122,.28)}
-.crow.fire{animation:fire 6s ease-in-out infinite}
-@keyframes fire{0%,88%,100%{background:transparent}
-  90%{background:rgba(139,92,246,.16)}94%{background:rgba(139,92,246,.06)}}
-.cfoot{padding:11px 15px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted);
-  font-family:var(--body)}
+.clock{margin-left:auto;font-family:var(--mono);font-size:.69rem;color:var(--cyan);
+  text-shadow:0 0 12px rgba(69,212,247,.6);font-variant-numeric:tabular-nums}
+.cbody{font-family:var(--mono);font-size:.745rem;line-height:1.62;padding:11px 14px;
+  height:252px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.cbody::-webkit-scrollbar{width:7px}
+.cbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.ln{white-space:pre-wrap;word-break:break-word;margin:0;animation:fadein .18s ease-out}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.dim{color:var(--muted)} .vio{color:var(--violet-hot)} .cy{color:var(--cyan)}
+.co{color:var(--coral)} .ok{color:#54e8a8} .wh{color:var(--ink)}
+.row{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:baseline}
+.badge{font-size:.62rem;letter-spacing:.06em;padding:1px 7px;border-radius:99px;white-space:nowrap}
+.b-q{background:rgba(255,107,122,.1);color:var(--coral);border:1px solid rgba(255,107,122,.3)}
+.b-s{background:rgba(139,92,246,.16);color:#c4a7ff;border:1px solid rgba(139,92,246,.42)}
+.b-d{background:rgba(84,232,168,.1);color:#54e8a8;border:1px solid rgba(84,232,168,.3)}
+.cprompt{display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--line);
+  background:rgba(8,6,20,.6);font-family:var(--mono);font-size:.76rem;flex:none}
+.ps1{color:var(--violet-hot)} .ps2{color:var(--muted)}
+.cprompt input{flex:1;background:none;border:none;outline:none;color:var(--ink);
+  font-family:var(--mono);font-size:.76rem;caret-color:var(--cyan);min-width:0}
+.cprompt input::placeholder{color:#4e4870}
+.hint{font-size:.63rem;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+@media (max-width:880px){.cbody{height:216px}.hint{display:none}}
 
 /* ---------- sections ---------- */
-section{padding:66px 0;position:relative}
+section{padding:66px 0;position:relative;scroll-margin-top:66px}
 section+section{border-top:1px solid var(--line)}
 .kick{font-family:var(--mono);font-size:.69rem;font-weight:500;letter-spacing:.2em;
   text-transform:uppercase;color:var(--coral);margin-bottom:12px}
@@ -159,6 +179,9 @@ tr:last-child td{border-bottom:none}
 td strong{color:var(--ink)}
 
 /* screenshots */
+.diagram{margin:0 0 2rem}
+.diagram img{width:100%;display:block;border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 24px 60px -34px #000,0 0 50px -28px rgba(139,92,246,.45)}
 figure{margin:0 0 1.7rem}
 figure img{width:100%;display:block;border:1px solid var(--line2);border-radius:12px;
   box-shadow:0 30px 70px -36px rgba(0,0,0,1),0 0 0 1px rgba(139,92,246,.12)}
@@ -327,15 +350,15 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
       <span class="dot" style="background:#ff5f57"></span>
       <span class="dot" style="background:#febc2e"></span>
       <span class="dot" style="background:#28c840"></span>
-      <span class="ctitle">send queue</span>
+      <span class="ctitle">tempo &mdash; scheduler</span>
       <span class="clock" id="clk">--:--:--</span>
     </div>
-    <div class="crow"><span class="ct">08:40:00</span><span class="cw">check-in prompt &middot; day 6</span><span class="pill ok">sent +2s</span></div>
-    <div class="crow"><span class="ct">10:00:00</span><span class="cw">visit reminder &middot; 3 days out</span><span class="pill ok">sent +1s</span></div>
-    <div class="crow"><span class="ct">17:00:00</span><span class="cw">monthly survey &middot; follow-up 1</span><span class="pill ok">sent +3s</span></div>
-    <div class="crow fire"><span class="ct">18:01:00</span><span class="cw">check-in prompt &middot; day 6</span><span class="pill wait">queued</span></div>
-    <div class="crow"><span class="ct">19:36:00</span><span class="cw">compensation notice</span><span class="pill wait">queued</span></div>
-    <div class="cfoot">Latency is measured from the scheduled second, not from whenever the scheduler woke up.</div>
+    <div class="cbody" id="out" role="log" aria-live="polite" aria-label="Scheduler console"></div>
+    <form class="cprompt" id="form" autocomplete="off">
+      <span class="ps1">tempo</span><span class="ps2">&rsaquo;</span>
+      <input id="in" placeholder="help" aria-label="Terminal command" spellcheck="false">
+      <span class="hint">try: queue &middot; ledger &middot; send</span>
+    </form>
   </div>
 </header>
 
@@ -347,6 +370,10 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
     Each message is declared once. The pipeline expands the declarations against the current
     export into dated rows. Senders drain that queue on a clock.
   </p>
+  <figure class="diagram">
+    <img src="img/diagram.png" alt="Flow diagram: survey platform, pipeline, queue, senders, ledger" loading="lazy">
+  </figure>
+
   <div class="flow">
     <div class="fstep"><b>01 &middot; pull</b><span>Export records, date fields and completion flags. Resolve each participant's survey link.</span></div>
     <div class="fstep"><b>02 &middot; compute</b><span>Turn each declaration into a timestamp: a date field plus an offset, gated on a completion flag.</span></div>
@@ -556,13 +583,134 @@ footer{padding:46px 0 72px;color:var(--muted);font-size:.9rem;border-top:1px sol
 
 <script>
 (function(){
-  var el=document.getElementById('clk');
-  function tick(){
-    var d=new Date();
-    el.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()]
-      .map(function(n){return String(n).padStart(2,'0')}).join(':');
+  var out=document.getElementById('out'), form=document.getElementById('form'),
+      inp=document.getElementById('in'), clk=document.getElementById('clk');
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function clock(){var d=new Date();clk.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()]
+    .map(function(n){return String(n).padStart(2,'0')}).join(':');}
+  clock(); setInterval(clock,1000);
+
+  function line(html,cls){
+    var p=document.createElement('div');
+    p.className='ln'+(cls?' '+cls:''); p.innerHTML=html;
+    out.appendChild(p); out.scrollTop=out.scrollHeight; return p;
   }
-  tick(); setInterval(tick,1000);
+  function esc(t){return String(t).replace(/[&<>]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+
+  var SLOTS=[
+    {t:'08:40', w:'check-in prompt · day 6',      st:'sent', lat:2},
+    {t:'10:00', w:'visit reminder · 3 days out',  st:'sent', lat:1},
+    {t:'17:00', w:'monthly survey · follow-up 1', st:'sent', lat:3},
+    {t:'18:01', w:'check-in prompt · day 6',      st:'queued'},
+    {t:'19:36', w:'compensation notice',               st:'queued'}
+  ];
+  function badge(s){
+    if(s.st==='sent')    return '<span class="badge b-d">sent +'+s.lat+'s</span>';
+    if(s.st==='sending') return '<span class="badge b-s">sending</span>';
+    return '<span class="badge b-q">queued</span>';
+  }
+  function renderQueue(){
+    SLOTS.forEach(function(s){
+      line('<span class="row"><span class="vio">'+s.t+'</span>'+
+           '<span class="dim">'+esc(s.w)+'</span>'+badge(s)+'</span>');
+    });
+  }
+
+  var BOOT=[
+    '<span class="wh">$ tempo start</span>',
+    '  pipeline   <span class="ok">connected</span>  <span class="dim">survey platform · 419 records</span>',
+    '  sender     <span class="ok">armed</span>      <span class="dim">sms + email · dry-run off</span>',
+    '  ledger     <span class="ok">ready</span>      <span class="dim">append-only · 3 dedup layers</span>',
+    '<span class="dim">watching 5 slots — next at 18:01</span>'
+  ];
+  function boot(done){
+    if(reduce||sessionStorage.getItem('tempo-booted')){
+      BOOT.forEach(function(b){line(b)}); done(); return;
+    }
+    var budget=1300, i=0, step=budget/BOOT.length, t0=performance.now();
+    (function tick(){
+      var now=performance.now();
+      while(i<BOOT.length && (now-t0)>=i*step){ line(BOOT[i]); i++; }
+      if(i<BOOT.length) requestAnimationFrame(tick);
+      else { try{sessionStorage.setItem('tempo-booted','1')}catch(e){} done(); }
+    })();
+  }
+
+  function fire(){
+    var next=null;
+    for(var i=0;i<SLOTS.length;i++){ if(SLOTS[i].st==='queued'){ next=SLOTS[i]; break; } }
+    if(!next){ for(var j=3;j<SLOTS.length;j++){ SLOTS[j].st='queued'; delete SLOTS[j].lat; } return; }
+    next.st='sending';
+    line('<span class="dim">'+next.t+'</span> <span class="vio">claim</span> '+
+         '<span class="dim">'+esc(next.w)+' — lock acquired</span>');
+    setTimeout(function(){
+      var lat=2+Math.floor(Math.random()*3);
+      next.st='sent'; next.lat=lat;
+      line('<span class="dim">'+next.t+'</span> <span class="ok">sent</span>  '+
+           '<span class="dim">sms → +1 555 0'+(100+Math.floor(Math.random()*800))+
+           ' · <span class="cy">+'+lat+'s</span> past slot</span>');
+      line('<span class="dim">       ledger ← 1 row · at-most-once held</span>');
+    }, reduce?0:900);
+  }
+
+  var CMD={
+    help:function(){
+      line('<span class="wh">commands</span>');
+      line('  <span class="cy">queue</span>    upcoming sends on the schedule');
+      line('  <span class="cy">send</span>     fire the next due slot');
+      line('  <span class="cy">ledger</span>   what already went out');
+      line('  <span class="cy">status</span>   pipeline + sender state');
+      line('  <span class="cy">clear</span>    clear the console');
+      line('<span class="dim">a demo of the real CLI surface — nothing here leaves the page.</span>');
+    },
+    queue:function(){ line('<span class="wh">5 slots today</span>'); renderQueue(); },
+    send:function(){ line('<span class="dim">$ tempo send --next</span>'); fire(); },
+    ledger:function(){
+      line('<span class="wh">ledger — last rows</span>');
+      SLOTS.filter(function(s){return s.st==='sent'}).forEach(function(s){
+        line('  <span class="dim">'+s.t+'</span> <span class="ok">sent</span> '+
+             '<span class="dim">'+esc(s.w)+' · +'+s.lat+'s</span>');
+      });
+      line('<span class="dim">  duplicate attempts blocked: 0 (claim · ledger · carrier)</span>');
+    },
+    status:function(){
+      line('  pipeline   <span class="ok">ok</span>    <span class="dim">last run 4m ago</span>');
+      line('  sender     <span class="ok">live</span>  <span class="dim">quiet hours 08:00–21:30</span>');
+      line('  latency    <span class="cy">2–4s</span>  <span class="dim">median past the scheduled second</span>');
+    },
+    clear:function(){ out.innerHTML=''; }
+  };
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var raw=inp.value.trim(); if(!raw) return;
+    inp.value='';
+    line('<span class="ps1">tempo</span><span class="ps2">›</span> '+esc(raw),'wh');
+    var parts=raw.toLowerCase().split(/\s+/);
+    var cmd=parts[0]==='tempo'?(parts[1]||''):parts[0];
+    if(CMD[cmd]) CMD[cmd]();
+    else line('<span class="co">'+esc(cmd)+'</span><span class="dim">: unknown — try </span><span class="cy">help</span>');
+  });
+
+  boot(function(){
+    renderQueue();
+    if(!reduce) setInterval(fire, 9000);
+  });
+
+  // highlight the nav link for whatever section is on screen
+  var links=[].slice.call(document.querySelectorAll('.navlinks a[href^="#"]'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
+  if(secs.length && 'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        var a=links.filter(function(l){return l.getAttribute('href')==='#'+e.target.id})[0];
+        if(a && e.isIntersecting){ links.forEach(function(l){l.classList.remove('on')}); a.classList.add('on'); }
+      });
+    },{rootMargin:'-20% 0px -70% 0px'});
+    secs.forEach(function(x){io.observe(x)});
+  }
 })();
 </script>
 </body>
