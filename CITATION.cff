@@ -9,14 +9,14 @@ authors:
 repository-code: "https://github.com/dzweben/tempo"
 url: "https://dzweben.github.io/tempo/"
 abstract: >-
-  A self-hosted server for research studies that send scheduled surveys and
-  reminders. TEMPO integrates a survey database of record with SMS and email
-  providers and turns a declarative timeline of study messages into precisely
-  timed, auditable outreach: momentary-assessment prompt grids, recurring
-  survey cycles with conditional follow-up cadences, visit and compensation
-  reminders, and just-in-time personal survey links. It includes a coordinator
-  dashboard for completion tracking and a daily reconciliation audit, and a
-  delivery path designed for at-most-once guarantees under real-world failure.
+  TEMPO is a server for scheduled participant messaging and completion tracking in
+  research studies lasting months or years. It serves studies where individual dates and
+  completed forms determine what comes next. Schedules are declared as rules over
+  survey-database fields. Each run reads current study data, calculates due messages,
+  checks completion and previous sends, and records delivery. SMS messaging is two-way
+  through the study's own phone number. The repository documents a system running
+  NIH-funded longitudinal research and contains source files with a synthetic example
+  schedule, without participant data or credentials.
 keywords:
   - ecological momentary assessment
   - REDCap
@@ -28,5 +28,5 @@ keywords:
   - clinical research informatics
 license: MIT
 doi: 10.5281/zenodo.22925367
-version: 1.0.0
-date-released: 2026-09-22
+version: 1.1.0
+date-released: 2026-11-06

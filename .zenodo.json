@@ -1,11 +1,11 @@
 {
   "title": "TEMPO (Tracking, Engagement, Messaging & Participant Outreach): automated survey scheduling and participant messaging for longitudinal studies",
   "upload_type": "software",
-  "description": "<p>A self-hosted server for research studies that send scheduled surveys and reminders. TEMPO sits between a study's survey database of record and its messaging providers, turning a declarative timeline of study messages into precisely timed, auditable outreach. Any protocol whose contacts are driven by participant dates &mdash; longitudinal cohorts, momentary-assessment sampling, recurring survey cycles, retention and compensation sequences, trial follow-up schedules &mdash; can be expressed as a timeline spec and run without manual sending.</p><p>Capabilities include momentary-assessment (EMA) prompt delivery on fixed grids with exact-second firing and protocol-compliant skip handling; recurring survey cycles with conditional follow-up cadences that stop on response; visit, at-home and compensation reminders; just-in-time personal survey-link resolution; a password-gated coordinator dashboard for completion tracking and outgoing-message review; and a daily send-reconciliation audit. Delivery is defended by opt-out enforcement, quiet hours, append-only idempotency ledgers, provider-history arbitration against double-sends, send claims, a runtime kill switch, and bounded catch-up windows.</p><p>Extracted from servers running NIH-funded longitudinal research. The repository contains source files only: no participant data or credentials appear in the working tree or its history, and the message timeline ships as a synthetic example rather than a real protocol.</p>",
+  "description": "<p>TEMPO is a server that automates participant communication and completion tracking for research studies that follow participants for months or years. It supports studies where each participant's schedule depends on their own dates and completed forms. TEMPO sends SMS and email, tracks form completion and progress through study phases, and supports two-way texting through the study's own phone number. The study's survey platform remains the source of truth.</p><p>Schedules are declared as rules that refer to fields in the study's survey database. Each rule uses a field to decide whether a message is owed and a date field to determine its timing. For example, a reminder can start fourteen days after a baseline visit and repeat weekly up to three times while a form remains incomplete. Each run reads current data from REDCap or Qualtrics, rebuilds the schedule, checks completion and previous sends, then sends eligible messages and records them. Completing a form stops its reminders.</p><p>The repository holds source files only, including a synthetic example schedule, with no participant data or credentials. Study identifiers are replaced with placeholders, and dashboard screenshots use synthetic records. It is a record of a system running participant communication for NIH-funded longitudinal research involving several hundred participants. It is not installable software, and there is no quickstart.</p>",
   "creators": [
     {
       "name": "Zweben, Danny",
-      "affiliation": "Your Institution"
+      "affiliation": "Temple University"
     }
   ],
   "keywords": [
@@ -35,5 +35,6 @@
       "relation": "isDocumentedBy",
       "scheme": "url"
     }
-  ]
+  ],
+  "version": "1.1.0"
 }
