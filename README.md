@@ -6,29 +6,24 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22925367.svg)](https://doi.org/10.5281/zenodo.22925367)
 
-TEMPO is a server that automates participant communication for long-running research
-studies. It reads a study's REDCap or Qualtrics database, sends each participant the visit
-reminders, survey invitations, follow-ups and timed prompts they are due, and tracks what
-they have completed.
+TEMPO (Tracking, Engagement, Messaging & Participant Outreach) is a server that automates
+participant communication and completion tracking for research studies lasting months or years.
 
-Every participant is on a different schedule, built from their own dates, and whether something is still owed depends on which forms they have finished. TEMPO recomputes all of that from the database on each run, so a corrected date or a new completion takes effect immediately.
+It sends SMS and email messages according to each participant's dates and completion flags,
+stops follow-ups when forms are complete, and tracks progress through individual sequences and
+across study phases. It reads REDCap or Qualtrics, which remains the survey platform and source
+of truth. In production, TEMPO runs participant communication for NIH-funded longitudinal
+research with several hundred participants.
 
-It is built for studies that run for months or years, where every participant is on their own
-schedule and the messages need to be a conversation. Texts go through the study's own phone
-number, so a participant can reply and the exchange sits in one thread a coordinator picks
-up. Anyone who texts STOP is silenced everywhere, automatically.
+TEMPO is for studies with participant-specific schedules that depend on completed activities and
+require two-way communication. Texts use the study's own number; automated messages and
+participant replies share a thread that a coordinator can read and answer.
 
-You configure it by writing rules against database fields: fourteen days after the baseline
-visit, while that form is still incomplete. Completing one survey can be what makes the next
-message due, which is enough to run a protocol lasting years.
-
-It runs the participant communication for NIH-funded longitudinal research, covering several
-hundred participants.
-
-This repository is published as a record of how that system works. It is not
-software you can install, and there is no quickstart here, because there is no
-honest version of one to write. [Running this for a real
-study](#running-this-for-a-real-study) explains why.
+Each message is declared once as a rule referencing study fields for its condition and anchor
+date. Each run rebuilds the schedule from current records, sends eligible messages and records
+them in a ledger. This repository is a record of how the system works and cannot be installed
+and run independently by a third party. A later section explains the study protocol and IRB
+requirements.
 
 ---
 
@@ -171,21 +166,11 @@ senders are Node scripts.
 
 ## Running this for a real study
 
-Realistically, you cannot take this repository and run it for your own study
-without me.
-
-Sending to participants means holding their contact information, and it means
-holding API credentials for the survey platform their data lives in. Both of
-those are governed by your protocol, not by a licence file. In practice I would
-need to be named on your IRB to have the access required to set it up and keep it
-running.
-
-So this is a description of a system that works, published so the design is
-citable and inspectable. If you are running a longitudinal study with timing
-requirements like these and want to talk about it, open an issue on this
-repository. If you would rather build your own from the description above,
-everything you need to know about the design is in this file and on
-[the site](https://dzweben.github.io/tempo/).
+Operating it requires participant contact information and API credentials for the database
+holding study data. The study's protocol governs access to both. In practice, the author would
+need to be named on the requesting study's IRB. The repository therefore provides source files
+and synthetic examples as a record of the system, with no quickstart. Interested readers should
+open an issue on the repository.
 
 ## What is in this repository
 

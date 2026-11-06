@@ -549,27 +549,23 @@ try{ if ('IntersectionObserver' in window &&
       </svg></h1>
     <div class="sub" data-rev style="--d:120ms">tracking &middot; engagement &middot; messaging &middot; participant outreach</div>
     <p class="lede" data-rev style="--d:170ms">
-      <strong>TEMPO is a server that automates participant communication for long-running
-      research studies.</strong> It reads a study's REDCap or Qualtrics database, sends each
-      participant the visit reminders, survey invitations, follow-ups and timed prompts they
-      are due, and tracks what they have completed.
+      <strong>TEMPO (Tracking, Engagement, Messaging & Participant Outreach) is a server that automates participant communication and completion tracking for research studies lasting months or years.</strong>
     </p>
     <p class="lede" data-rev style="--d:200ms">
-      Every participant is on a different schedule, built from their own dates, and whether
-      something is still owed depends on which forms they have finished. TEMPO recomputes all of
-      that from the database on each run, so a corrected date or a new completion takes effect
-      immediately.
+      It sends SMS and email reminders, invitations and follow-ups according to each participant's
+      dates and completed forms. It tracks completed instruments, answered or missed slots, and
+      progress across study phases. REDCap or Qualtrics remains the survey platform and source of
+      truth.
     </p>
-    <p class="lede sm" data-rev style="--d:240ms">
-      It is built for studies that run for months or years, where every participant is on their
-      own schedule and the messages need to be a conversation. Texts go through the study's
-      own phone number, so a participant can reply and the exchange sits in one thread a
-      coordinator picks up. Anyone who texts STOP is silenced everywhere, automatically.
+    <p class="lede" data-rev style="--d:230ms">
+      TEMPO is for studies where participants follow individual schedules and communication needs to
+      be a two-way conversation. Texts use the study's own phone number, with automated messages and
+      participant replies in one thread that a coordinator can read and answer.
     </p>
     <p class="lede sm" data-rev style="--d:260ms">
-      You configure it by writing rules against database fields: fourteen days after the
-      baseline visit, while that form is still incomplete. Completing one survey can be what
-      makes the next message due, which is enough to run a protocol lasting years.
+      A schedule is declared as a list of rules, each referencing study fields for its condition and
+      anchor date, such as sending a reminder fourteen days after baseline, repeating weekly up to
+      three times while the form remains incomplete.
     </p>
     <div class="cta" data-rev style="--d:270ms">
       <a class="btn btn-p" href="https://github.com/dzweben/tempo">Source on GitHub</a>
@@ -600,8 +596,9 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">How it works</div><h2>From a date field to a sent message</h2></div>
   </div>
   <p class="intro" data-rev>
-    Each run does the same five things: export the current records, expand the rules into
-    dated rows, pick the rows that are due now, send them, and log what went out.
+    A run is one pass through the study's current data and scheduling rules. TEMPO pulls participant
+    records, expands the rules into dated occurrences, selects what is due, sends those messages and
+    records them in the ledger.
   </p>
 
   <div class="arch" data-rev>
@@ -743,53 +740,47 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="sublab" data-rev>the grid</div>
   <p data-rev>
-    A rule produces the date. Fourteen days after the baseline visit, repeating weekly, up to three times, while the form is still incomplete. Each run evaluates those
-    rules against the current roster and produces one row per participant for each time a
-    message is due, with the timestamp, the destination and the message body already filled
-    in. Those rows are the whole schedule for the study.
+    The study declares each message once as a rule. Each run evaluates those rules using participant
+    data and builds a grid with one dated row per participant per occurrence, including its
+    destination and rendered message. This grid is the complete schedule. TEMPO discards and
+    rebuilds it every run; the ledger persists. Correcting a visit date in REDCap corrects every
+    message anchored to it on the next run.
   </p>
+
   <p data-rev>
-    The grid is thrown away and rebuilt on every run. The only thing kept between runs is the
-    ledger of what has been sent. That is what makes fixing things cheap: if a coordinator
-    corrects a wrong visit date in REDCap, every message anchored to that date is right on the
-    next run.
-  </p>
-  <p data-rev>
-    Picking what to send is a filter on that grid: rows inside the current run's window whose
-    condition still holds against the current completion flags, minus anyone who opted out,
-    anything falling in quiet hours, anything whose survey link did not resolve, and anything
-    already in the ledger.
+    TEMPO selects rows within the run's window whose conditions still hold against current
+    completion flags. It excludes opted-out participants, messages in quiet hours, messages with
+    unresolved survey links and messages already recorded in the ledger.
   </p>
 
   <div class="sublab" data-rev>what counts as a trigger</div>
   <p data-rev>
-    A rule has two parts and both point at the survey platform. The condition that decides
-    whether a message is owed is a field reference, written <code>[event][field]</code>, and
-    so is the date it counts from. There is no list of message types in the code and no
-    special case for momentary assessment or for visit reminders. A condition is a field that
-    is not marked complete. An anchor is a date field on some event.
+    Every rule has a condition that decides whether a message is owed and an anchor date from which
+    its timing is measured. Both reference fields in the study database using `[event][field]`. The
+    condition checks a field for incomplete status; the anchor references a date field. The code has
+    no message-type enumeration or special cases for EMA prompts or visit reminders.
   </p>
+
   <p data-rev>
-    Because of that, schedules chain without anyone sequencing them. Completing an instrument
-    changes a field that another rule is watching. Record a visit and its questionnaires come
-    due. Complete those and their reminders stop, and the visit date becomes the anchor for
-    the next phase. Nobody writes that ordering down. It comes out of the field references,
-    which is why a three-year protocol that branches on what participants do is still a flat
+    Schedules chain through those fields. Recording a visit brings dependent questionnaires due.
+    Completing the questionnaires stops their reminders, and the visit date anchors the next phase.
+    A three-year protocol that branches on participant behaviour can still be expressed as a flat
     list of rules.
   </p>
 
   <div class="sublab" data-rev>the clock</div>
   <p data-rev>
-    Nothing runs continuously. Cron invokes the pipeline, and the only requirement is that it
-    runs often enough that no slot falls between runs. A reminder due at 5pm is covered by a
-    run at 5pm. A prompt that has to arrive at 8:10 needs runs that overlap that slot, because
-    cron will not fire at exactly 8:10:00. The run picks the slot up early and waits in
-    process until the scheduled second.
+    Cron starts the pipeline on a schedule. Runs must cover every scheduled slot. A reminder due at
+    5pm can be covered by a 5pm run. For minute-precision prompts, run windows must overlap the slot
+    because cron will not start at exactly the scheduled second. The run acquires the slot early and
+    waits in process until that second.
   </p>
+
   <p data-rev>
-    You can run it as often as you want. Each run rebuilds the grid from a fresh export and
-    checks the ledger before sending, so an extra run finds nothing to do and exits. How often
-    you run it depends on how precise the timing needs to be.
+    Measured production delivery is 2–4 seconds past the scheduled second, with latency recorded for
+    every message in the ledger. Extra runs are harmless because each rebuilds the grid from a fresh
+    export and checks the ledger before transmitting. A redundant invocation finds nothing to send.
+    The timing requirement determines how often cron runs.
   </p>
 
   <div class="sublab" data-rev>what it plugs into</div>
@@ -882,9 +873,8 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="sublab" data-rev>not sending it twice</div>
   <p data-rev>
-    Three separate checks have to fail before the same message goes out twice. Duplicates
-    matter more here than in most software: a repeat text, or one that arrives at 3am, is a
-    protocol deviation the study has to report, and many participants are minors.
+    Three independent checks prevent the same message from being sent twice. Duplicate texts are
+    protocol deviations the study must report, and many participants are minors.
   </p>
   <div class="tw" data-rev>
   <table>
@@ -909,9 +899,9 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">Momentary assessment</div><h2>Prompts on the minute</h2></div>
   </div>
   <p class="intro" data-rev>
-    An EMA prompt asks what someone is doing right now, so it has to arrive when it was
-    scheduled. A prompt that shows up forty minutes late is asking about a different part of
-    that person's day, and the answer looks identical to a good one in the dataset.
+    An EMA prompt asks what a participant is doing when asked. When it arrives late, the response is
+    stored against the scheduled slot and appears valid for a moment it did not measure. Past the
+    grace window, TEMPO records the prompt as skipped and does not send it.
   </p>
 
   <div class="sched" data-rev id="sched">
@@ -994,9 +984,10 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">The server</div><h2>The dashboard</h2></div>
   </div>
   <p class="intro" data-rev>
-    Most of the time a coordinator wants to know one of two things: what is going out this
-    week, or where a particular participant stands. The dashboard answers both from the same
-    files the senders write. The screens below use synthetic data.
+    The password-gated dashboard shows instrument completion and completion by wave or phase across
+    the roster. Each participant's view shows their position in the sequence, with slots answered,
+    missed or still due. It reads the same files the senders write. The screens shown use synthetic
+    records.
   </p>
 
   <div class="shw" data-rev>
@@ -1289,6 +1280,11 @@ $$('.cw').forEach(function(cw){
   var booted = false;
   try { booted = sessionStorage.getItem('tempo-booted') === '1'; } catch(e){}
 
+  function fill(){
+    var guard = 0;
+    while (out.scrollHeight <= out.clientHeight && guard++ < 150) emit();
+  }
+
   function emit(){
     var r = Math.random();
     if (r < .34)      ev('QUEUED','b-q','<span class="wh">'+pid()+'</span> <span class="dim">'+form_()+'</span>','due '+(8+Math.floor(Math.random()*12))+':'+(Math.random()<.5?'00':'30'));
@@ -1300,9 +1296,13 @@ $$('.cw').forEach(function(cw){
   function boot(){
     if (i < BOOT.length){ line(BOOT[i][0]); i++; setTimeout(boot, booted ? 0 : step); return; }
     try { sessionStorage.setItem('tempo-booted','1'); } catch(e){}
-    /* fill the visible window, whatever height the hero column came to */
-    var guard = 0;
-    while (out.scrollHeight <= out.clientHeight && guard++ < 90) emit();
+    /* Fill the visible window. Webfonts change the hero column's height, so
+       measuring before they land under-fills the log; wait, then top up if
+       the console ever grows. */
+    fill();
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve())
+      .then(function(){ requestAnimationFrame(function(){ requestAnimationFrame(fill); }); });
+    if (window.ResizeObserver) new ResizeObserver(fill).observe(out);
     setTimeout(loop, 2600);
   }
 
