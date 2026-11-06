@@ -191,6 +191,4 @@ Zweben, D. (2026). *TEMPO (Tracking, Engagement, Messaging & Participant Outreac
 automated survey scheduling and participant messaging for longitudinal studies*
 [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22925367
 
-That DOI always resolves to the newest version. The version DOI for v1.1.0 is
-[10.5281/zenodo.24019421](https://doi.org/10.5281/zenodo.24019421), for citing
-the exact release you read.
+That DOI always resolves to the newest version.
