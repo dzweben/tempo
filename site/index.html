@@ -733,7 +733,7 @@ try{ if ('IntersectionObserver' in window &&
   <div class="flow" data-rev>
     <div class="fstep"><b><i>01</i> pull</b><span>Export the study out of REDCap or Qualtrics over the API, one call per event, and stitch it together on <code>record_id</code> so you end up with a single row per participant holding their dates, the completion flag on each instrument, and their contact details.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>02</i> expand</b><span>Run every rule against that row. Fill in the <code>[event][field]</code> references with that person's values, fetch the survey URLs the message needs, do the date arithmetic, and you get one dated line per participant for each time the message is owed.</span><span class="arw">&rsaquo;</span></div>
-    <div class="fstep"><b><i>03</i> select</b><span>Narrow that down to the lines falling in this run's window, and check each one's condition against the completion flags as they stand right now. Drop anyone who opted out, anything inside quiet hours, anything whose link did not resolve, and anything the ledger says already went.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>03</i> select</b><span>A row qualifies for sending when its timestamp falls within the run's window and daily sending window, its condition still holds, the participant's opt-out status permits contact, its survey link resolves, and its ledger key is unused.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>04</i> send</b><span>Claim the line so nothing else can take it, render the body with that person's details and survey URL in it, and POST it to the messaging provider or hand it to SMTP.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>05</i> record</b><span>Write <code>pid | alert | timestamp | channel | recipient</code> to the ledger. That line is what every later run checks against, which is how the same message never goes out twice.</span><span class="arw">&rsaquo;</span></div>
   </div>
@@ -770,10 +770,10 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="sublab" data-rev>the clock</div>
   <p data-rev>
-    Cron starts the pipeline on a schedule. Runs must cover every scheduled slot. A reminder due at
-    5pm can be covered by a 5pm run. For minute-precision prompts, run windows must overlap the slot
-    because cron will not start at exactly the scheduled second. The run acquires the slot early and
-    waits in process until that second.
+    TEMPO sends messages at their scheduled times, including prompts due at a specific minute,
+    without a continuously running process. Cron invokes the pipeline often enough to cover every
+    slot. For precise prompts, runs cover overlapping windows, and the sender claims the slot
+    early and waits in process until the scheduled second.
   </p>
 
   <p data-rev>
@@ -871,25 +871,24 @@ try{ if ('IntersectionObserver' in window &&
     </div>
   </div>
 
-  <div class="sublab" data-rev>not sending it twice</div>
+  <div class="sublab" data-rev>once-only delivery</div>
   <p data-rev>
-    Three independent checks prevent the same message from being sent twice. Duplicate texts are
-    protocol deviations the study must report, and many participants are minors.
+    TEMPO delivers each message once and records it in the ledger. The design provides this
+    guarantee through three independent layers, described in the table below.
   </p>
   <div class="tw" data-rev>
   <table>
-    <tr><th>Mechanism</th><th>What it catches</th></tr>
-    <tr><td><strong>Append-only ledger</strong><br><code>pid|alert|time|channel|recipient</code></td><td>The ordinary case: a rerun, a retry, an overlapping schedule</td></tr>
-    <tr><td><strong>Claim before transmit</strong></td><td>Two runs hitting the same slot; only one wins the claim</td></tr>
-    <tr><td><strong>Provider history check</strong></td><td>A send that happened but whose ledger write was lost</td></tr>
+    <tr><th>Design layer</th><th>How it works</th></tr>
+    <tr><td><strong>Append-only ledger</strong><br><code>pid|alert|time|channel|recipient</code></td><td>Every run checks it before transmitting.</td></tr>
+    <tr><td><strong>Slot claim</strong></td><td>A run claims each slot before transmission; only its holder sends.</td></tr>
+    <tr><td><strong>Provider history</strong></td><td>Before late or recovered sends, the sender checks the provider's message history.</td></tr>
   </table>
   </div>
   <p data-rev>
-    There are other guards around it. Nothing transmits outside the daily window. The opt-out
-    list is checked when the queue is built and checked again right before sending, because
-    somebody can opt out in between. A cap limits how much any one run can send, so a bad
-    rule cannot blast the whole roster. A message whose survey link did not resolve is held back, so a broken link never reaches anyone. Dry-run is the default, and there is a switch that puts
-    everything back into dry-run without waiting on a deploy.
+    Study operators can set a daily sending window and a per-run send cap. TEMPO honours the opt-
+    out list when building the queue and again at send time, and holds messages whose survey links
+    have not resolved. Dry-run is the default, and an operator can return the system to dry-run
+    with a switch, without a redeploy.
   </p>
 </section>
 
@@ -899,9 +898,10 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">Momentary assessment</div><h2>Prompts on the minute</h2></div>
   </div>
   <p class="intro" data-rev>
-    An EMA prompt asks what a participant is doing when asked. When it arrives late, the response is
-    stored against the scheduled slot and appears valid for a moment it did not measure. Past the
-    grace window, TEMPO records the prompt as skipped and does not send it.
+    TEMPO delivers each participant's momentary-assessment sampling grid at exact clock times
+    throughout a sampling period and tracks which slots they answer. In the reference deployment,
+    each cycle contains 25 prompts across roughly ten days, with fixed weekday and clock-time
+    slots anchored to that participant's start date.
   </p>
 
   <div class="sched" data-rev id="sched">
@@ -967,14 +967,9 @@ try{ if ('IntersectionObserver' in window &&
   </div>
 
   <p data-rev>
-    Runs can overlap, with one still waiting out a slot when the next is invoked, so a run
-    claims a slot before it sends anything and only the run holding the claim transmits. If a
-    prompt misses its window anyway, it is logged as skipped.
-  </p>
-  <p data-rev>
-    In practice they land two to four seconds after the second they were scheduled for. That
-    number goes in the ledger next to every message, so if it ever starts drifting you can
-    see it happening.
+    TEMPO sends prompts at the scheduled second; measured delivery in production is 2 to 4 seconds
+    later, recorded per message. Cron starts runs with overlapping windows, and the sender claims
+    each slot early and waits in process until its scheduled second. A prompt past its window is recorded as skipped.
   </p>
 </section>
 
