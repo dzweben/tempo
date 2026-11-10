@@ -36,7 +36,7 @@ again the week after unless they have already completed it. Someone in the
 momentary-assessment arm gets twenty-five prompts over ten days, each at a specific minute.
 
 Tracking is the other half of the same data. The completion flags that decide whether to send
-a reminder also tell you how far through their sequence each participant is, which
+a reminder also show how far through their sequence each participant is, which
 instruments are outstanding, and where a wave stands overall. TEMPO computes the schedule and
 reports the state from one pass over the same records.
 
@@ -44,7 +44,7 @@ reports the state from one pass over the same records.
 
 - **Reminders and sequences hung off each participant's own dates.** Follow-ups
   stop queueing the moment the form is marked complete, so people who have
-  already answered stop hearing from you.
+  already answered stop being contacted.
 - **Momentary assessment (EMA/ESM).** A fixed set of weekday and clock-time
   slots, anchored to each participant's start date, delivered on the minute. If
   a prompt misses its window it gets logged as skipped.
@@ -64,13 +64,13 @@ reports the state from one pass over the same records.
 Every run does the same five things, start to finish.
 
 1. **Pull.** Export the study over the REDCap or Qualtrics API, one call per
-   event, and stitch it together on `record_id` so you end up with a single row
-   per participant holding their dates, the completion flag on each instrument,
-   and their contact details.
-2. **Expand.** Run every rule against that row. Fill in the `[event][field]`
-   references with that person's values, fetch the survey URLs the message
-   needs, do the date arithmetic, and you get one dated line per participant for
-   each time the message is owed.
+   event, and stitch it together on `record_id` into a single row per participant
+   holding their dates, the completion flag on each instrument, and their contact
+   details.
+2. **Expand.** Run every rule against that row. Substitute that participant's values into
+   the `[event][field]` references, fetch the survey URLs the message needs, and
+   perform the date arithmetic, producing one dated line per participant for each
+   time the message is owed.
 3. **Select.** Narrow that to the lines falling in this run's window, and check
    each one's condition against the completion flags as they stand right now.
    Drop anyone who opted out, anything inside quiet hours, anything whose link
@@ -118,9 +118,10 @@ the scheduled second. In practice prompts land two to four seconds after the sec
 scheduled for, and that figure is written to the ledger for every message, so drift is
 visible.
 
-You can run it as often as you want. Each run rebuilds the grid from a fresh export and checks
-the ledger before sending, so an extra run finds nothing to do and exits. How often you run it
-depends on how precise the timing needs to be.
+Each run rebuilds the grid from a fresh export and checks the ledger before sending. Extra
+runs with nothing due exit without sending. Required timing precision determines run
+frequency, with runs scheduled at a reminder's due time or overlapping a prompt's target
+minute.
 
 ## Not sending the same thing twice
 
@@ -146,23 +147,19 @@ run can send, so a bad rule cannot blast the whole roster. Dry-run is the
 default, and there is a switch that puts everything back into dry-run without
 waiting on a deploy.
 
-## What a system like this needs
+## Integrations and storage
 
-| | |
-|---|---|
-| **Survey platform** | A record export, date fields, per-form completion flags, and a per-participant survey link. The build here uses REDCap. |
-| **SMS provider** | A send endpoint, and ideally a message-history endpoint so you can check whether something already arrived. The build here uses OpenPhone. |
-| **Email** | SMTP credentials, or any HTTP send API. The build here uses Gmail SMTP. |
-| **A scheduler** | Anything that can call a URL on a schedule: cron, a platform cron trigger, a CI timer. |
-| **Somewhere to put two things** | The rebuilt grid, and the append-only record of what was sent. The reference implementation keeps both as JSON in an access-controlled store; object storage, a database or an encrypted volume all work. |
+| Integration | TEMPO deployment |
+| --- | --- |
+| Survey platform | REDCap supplies record exports, date fields, per-form completion flags and per-participant survey links. |
+| SMS provider | OpenPhone sends messages; its message-history endpoint confirms whether a message already arrived. |
+| Email | Gmail SMTP sends email using credentials from the deployment configuration. |
+| Scheduler | Scheduled URL calls trigger runs. These can come from cron, a platform cron trigger or a CI timer. |
+| Storage | An access-controlled repository stores the rebuilt grid and append-only ledger as JSON. |
 
-The survey platform stays the source of truth the whole way through. TEMPO holds
-as little as it can about a participant, which comes down to a record identifier
-and a way to contact them. [SECURITY.md](SECURITY.md) covers what that means in
-practice.
+The survey platform remains the system of record. TEMPO holds only a record identifier and contact details for each participant; dates, completion flags and schedule state are derived. [SECURITY.md](SECURITY.md) describes data handling and access.
 
-The dashboard is Next.js, React, TypeScript and Tailwind. The pipeline and the
-senders are Node scripts.
+The dashboard uses Next.js, React, TypeScript and Tailwind. The pipeline and senders are Node scripts.
 
 ## Running this for a real study
 

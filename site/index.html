@@ -732,7 +732,7 @@ try{ if ('IntersectionObserver' in window &&
 
   <div class="flow" data-rev>
     <div class="fstep"><b><i>01</i> pull</b><span>Export the study out of REDCap or Qualtrics over the API, one call per event, and stitch it together on <code>record_id</code> so you end up with a single row per participant holding their dates, the completion flag on each instrument, and their contact details.</span><span class="arw">&rsaquo;</span></div>
-    <div class="fstep"><b><i>02</i> expand</b><span>Run every rule against that row. Fill in the <code>[event][field]</code> references with that person's values, fetch the survey URLs the message needs, do the date arithmetic, and you get one dated line per participant for each time the message is owed.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>02</i> expand</b><span>TEMPO evaluates every rule against each participant's row, substitutes that participant's values into <code>[event][field]</code> references, fetches the required survey URLs, and performs the date arithmetic to produce one dated line per participant for each time a message is owed.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>03</i> select</b><span>A row qualifies for sending when its timestamp falls within the run's window and daily sending window, its condition still holds, the participant's opt-out status permits contact, its survey link resolves, and its ledger key is unused.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>04</i> send</b><span>Claim the line so nothing else can take it, render the body with that person's details and survey URL in it, and POST it to the messaging provider or hand it to SMTP.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>05</i> record</b><span>Write <code>pid | alert | timestamp | channel | recipient</code> to the ledger. That line is what every later run checks against, which is how the same message never goes out twice.</span><span class="arw">&rsaquo;</span></div>
@@ -805,7 +805,7 @@ try{ if ('IntersectionObserver' in window &&
     <div><div class="kick">Sample code</div><h2>Declaring and sending a message</h2></div>
   </div>
   <p class="intro" data-rev>
-    Field names below are placeholders for your own event and instrument names.
+    The field names below are placeholders for the study's event and instrument names.
   </p>
 
   <div class="cw" data-rev id="cw">
@@ -962,7 +962,7 @@ try{ if ('IntersectionObserver' in window &&
   <span class="k">await</span> sendSMS(slot.phone, render(slot));
   <span class="k">await</span> ledger.append({ ...slot, status: <span class="s">"sent"</span>, latencySec: <span class="s">2</span> });
 }</code></pre></div>
-      <div class="cwf"><b>Waiting out the remainder.</b> Cron will not fire you at 8:10:00 exactly, so the sender does not try to make it. It wakes up on a coarse clock, grabs anything coming up soon, and then just sits there until the second arrives.</div>
+      <div class="cwf"><b>Waiting out the remainder.</b> On cron's coarse schedule, the sender collects messages due soon and waits until the exact scheduled second, such as 8:10:00, to send each one.</div>
     </div>
   </div>
 
