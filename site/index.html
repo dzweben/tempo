@@ -731,7 +731,7 @@ try{ if ('IntersectionObserver' in window &&
   </div>
 
   <div class="flow" data-rev>
-    <div class="fstep"><b><i>01</i> pull</b><span>Export the study out of REDCap or Qualtrics over the API, one call per event, and stitch it together on <code>record_id</code> so you end up with a single row per participant holding their dates, the completion flag on each instrument, and their contact details.</span><span class="arw">&rsaquo;</span></div>
+    <div class="fstep"><b><i>01</i> pull</b><span>Export the study out of REDCap or Qualtrics over the API, one call per event, and stitch it together on <code>record_id</code> into a single row per participant holding their dates, the completion flag on each instrument, and their contact details.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>02</i> expand</b><span>TEMPO evaluates every rule against each participant's row, substitutes that participant's values into <code>[event][field]</code> references, fetches the required survey URLs, and performs the date arithmetic to produce one dated line per participant for each time a message is owed.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>03</i> select</b><span>A row qualifies for sending when its timestamp falls within the run's window and daily sending window, its condition still holds, the participant's opt-out status permits contact, its survey link resolves, and its ledger key is unused.</span><span class="arw">&rsaquo;</span></div>
     <div class="fstep"><b><i>04</i> send</b><span>Claim the line so nothing else can take it, render the body with that person's details and survey URL in it, and POST it to the messaging provider or hand it to SMTP.</span><span class="arw">&rsaquo;</span></div>
@@ -926,8 +926,7 @@ try{ if ('IntersectionObserver' in window &&
     The grid is a list of weekday and clock-time slots: Monday 8:10am, Monday 1:45pm, and so
     on. Every participant gets the same set of slots anchored to their own start date.
     Expanding it gives one row per prompt with that person's phone number and survey link
-    attached. In the picture above, how far a stem reaches tells you the time of day, and the
-    shaded columns are the hours when nobody gets texted.
+    attached. In the picture above, stem height is the time of day, and the shaded columns are the hours when nobody gets texted.
   </p>
 
   <div class="cw" data-rev id="cw2">
