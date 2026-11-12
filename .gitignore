@@ -5,7 +5,7 @@
 
 # Participant data — lives in a separate PRIVATE repository
 private/
-data/
+/data/
 
 # Build + deps
 node_modules/

@@ -1,27 +1,37 @@
 # Security
 
-## Participant data
+## Containment and dashboard masking
 
-TEMPO needs a stable survey record identifier and contact endpoints: a phone number, an email address, or both. Dates, completion flags and schedule state are derived. Names and free-text fields are pulled only when the dashboard displays them.
+REDCap remains the system of record. Survey responses stay in the survey database. TEMPO never reads or stores participants' answers.
 
-The survey platform remains the system of record. TEMPO rebuilds its disposable working copy each run, then uses it to determine what is owed without querying the survey database repeatedly.
+The data API routes mask contact details server side before returning dashboard data. The browser never receives real names, email addresses, or phone numbers. Masking covers first name, last name, parent name, email, primary phone, secondary phone, child phone, and momentary-assessment phone.
 
-A personal survey URL grants access to that participant's responses and is a credential. TEMPO resolves links at send time without storing them.
+Examples show the retained characters:
+
+- Name: `Jordan` → `J***n`
+- Email: `a.person@example.org` → `a***n@e***e.org`
+- Phone: `(555) 010-0199` → `5***9`
+
+These fragments help coordinators distinguish participants. The sent log applies the same masking to recipients, including recipients embedded in send keys.
+
+## Working data and survey links
+
+TEMPO holds each participant's stable record identifier, contact endpoints, schedule anchor dates, and per-instrument completion flags. A disposable working copy is rebuilt every run to determine what is owed while limiting repeated survey database queries.
+
+Personal survey URLs grant access to participants' responses and count as credentials. They are resolved at send time and never stored.
 
 ## State and access
 
-Two kinds of state persist. Snapshots contain the derived roster and queues. Append-only ledgers record what was sent. This deployment stores both as JSON in a separate access-controlled repository, giving every change a timestamped history and keeping concurrency simple.
+Snapshots contain the derived roster and queues. Append-only ledgers record sends. Both persist as JSON in a separate access-controlled repository with timestamped change history. Storage requires read-modify-write with an optimistic concurrency check.
 
-The code requires storage with read-modify-write operations and an optimistic concurrency check. Object storage, a managed database or an encrypted volume could also serve.
+Credentials reside in deployment environment configuration and the CI provider's secret store.
 
-Credentials live in the deployment platform's environment configuration and the CI provider's secret store. No credentials are committed to either repository.
+The dashboard has a public URL. A single shared password gates access through a signed cookie checked by middleware on every route.
 
-The dashboard has a public URL. A single shared password gates access through a signed cookie checked on every route.
+Sending is off by default. A runtime flag returns the whole system to dry-run without redeployment.
 
-Sending is off by default. A runtime flag switches the whole system to dry-run without a redeploy.
+## Repository and vulnerability reporting
 
-## Source repository and vulnerability reports
+This source repository contains code and synthetic examples. The example schedule describes a fictional study, and fixtures contain invented people. No participant data or credentials have ever been committed.
 
-The source repository contains code and synthetic examples only. The example schedule describes a fictional study, and fixtures contain invented people. No participant data or credentials have ever been committed to the source repository.
-
-Vulnerability reports are preferred through a private security advisory on the repository.
+Private repository security advisories are the preferred channel for vulnerability reports.
